@@ -2,7 +2,7 @@ import MainUI
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from time import sleep
-import joystick
+# import joystick
 import parsdict
 from functools import partial
 
@@ -52,7 +52,7 @@ class Application(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.jogWindow.delta.connect(self.on_jog_button)
         self.jogWindow.mode.connect(self.on_get_jog_mode)
         self.jogWindow.vel.connect(self.on_get_jog_velocity)
-        self.jogWindow.joymode.clicked.connect(self.on_joy_mode)
+        # self.jogWindow.joymode.clicked.connect(self.on_joy_mode)
 
         self.teachWindow.but1.clicked.connect(self.on_send_command)
         self.teachWindow.but2.clicked.connect(self.on_insert_movejoints)
