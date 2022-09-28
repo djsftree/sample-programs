@@ -1,48 +1,42 @@
-#!/usr/bin/env python3
 import threading
 import queue
 import re
 
 CHECKPOINT_ID_MAX_PRIVATE = 8191  # Max allowable checkpoint id, inclusive
 
-TERMINATE = '--terminate--'
+TERMINATE = "--terminate--"
 
 GRIPPER_OPEN = True
 GRIPPER_CLOSE = False
 
 
 class MecademicException(Exception):
-    """Base exception class for Mecademic-related exceptions.
+    """Base exception class for Mecademic-related exceptions."""
 
-    """
     pass
 
 
 class InvalidStateError(MecademicException):
-    """The internal state of the instance is invalid.
+    """The internal state of the instance is invalid."""
 
-    """
     pass
 
 
 class CommunicationError(MecademicException):
-    """There is a communication issue with the robot.
+    """There is a communication issue with the robot."""
 
-    """
     pass
 
 
 class DisconnectError(MecademicException):
-    """A non-nominal disconnection has occurred.
+    """A non-nominal disconnection has occurred."""
 
-    """
     pass
 
 
 class InterruptException(MecademicException):
-    """An event has encountered an error. Perhaps it will never be set.
+    """An event has encountered an error. Perhaps it will never be set."""
 
-    """
     pass
 
 
@@ -85,7 +79,7 @@ class InterruptableEvent:
         """
         success = self._event.wait(timeout=timeout)
         if self._interrupted:
-            raise InterruptException('Event received exception, possibly because event will never be triggered.')
+            raise InterruptException("Event received exception, possibly because event will never be triggered.")
         return success
 
     def wait_for_data(self, timeout=None):
@@ -104,33 +98,27 @@ class InterruptableEvent:
         """
         success = self._event.wait(timeout=timeout)
         if self._interrupted:
-            raise InterruptException('Event received exception, possibly because event will never be triggered.')
+            raise InterruptException("Event received exception, possibly because event will never be triggered.")
         elif not success:
-            raise InterruptException('Event timed out.')
+            raise InterruptException("Event timed out.")
         else:
             return self._data
 
     def set(self, data=None):
-        """Set the event and unblock all waits. Optionally modify data before setting.
-
-        """
+        """Set the event and unblock all waits. Optionally modify data before setting."""
         with self._lock:
             self._data = data
             self._event.set()
 
     def abort(self):
-        """Unblock any waits and raise an exception.
-
-        """
+        """Unblock any waits and raise an exception."""
         with self._lock:
             if not self._event.is_set():
                 self._interrupted = True
                 self._event.set()
 
     def clear(self):
-        """Reset the event to its initial state.
-
-        """
+        """Reset the event to its initial state."""
         with self._lock:
             self._interrupted = False
             self._event.clear()
@@ -151,9 +139,7 @@ class InterruptableEvent:
                 return self._event.is_set()
 
     def clear_abort(self):
-        """Clears the abort.
-
-        """
+        """Clears the abort."""
         with self._lock:
             if self._interrupted:
                 self._interrupted = False
@@ -161,21 +147,17 @@ class InterruptableEvent:
 
     @property
     def id(self):
-        """Make id a read-only property since it should not be changed after instantiation.
-
-        """
+        """Make id a read-only property since it should not be changed after instantiation."""
         return self._id
 
     @property
     def data(self):
-        """Make data a read-only property and enforce that it is only assignable at construction or using set().
-
-        """
+        """Make data a read-only property and enforce that it is only assignable at construction or using set()."""
         return self._data
 
 
 class TimestampedData:
-    """ Class for storing timestamped data.
+    """Class for storing timestamped data.
 
     Attributes
     ----------
@@ -202,7 +184,7 @@ class TimestampedData:
         floats = string_to_floats(input_string)
 
         if (len(floats) - 1) != len(self.data):
-            raise ValueError('Cannot update TimestampedData with incompatible data.')
+            raise ValueError("Cannot update TimestampedData with incompatible data.")
 
         if floats[0] > self.timestamp:
             self.timestamp = floats[0]
@@ -225,7 +207,7 @@ class TimestampedData:
 
     @classmethod
     def zeros(cls, length):
-        """ Construct empty TimestampedData object of specified length.
+        """Construct empty TimestampedData object of specified length.
 
         Parameters
         ----------
@@ -237,10 +219,10 @@ class TimestampedData:
         TimestampedData object
 
         """
-        return cls(0, [0.] * length)
+        return cls(0, [0.0] * length)
 
     def __eq__(self, other):
-        """ Return true if other object has identical timestamp and data.
+        """Return true if other object has identical timestamp and data.
 
         Parameters
         ----------
@@ -256,7 +238,7 @@ class TimestampedData:
         return other.timestamp == self.timestamp and other.data == self.data
 
     def __ne__(self, other):
-        """ Return true if other object has different timestamp or data.
+        """Return true if other object has different timestamp or data.
 
         Parameters
         ----------
@@ -301,14 +283,14 @@ class Message:
             Input string to convert to message.
 
         """
-        id_start = input.find('[') + 1
-        id_end = input.find(']', id_start)
+        id_start = input.find("[") + 1
+        id_end = input.find("]", id_start)
         id = int(input[id_start:id_end])
         # Find next square brackets (contains data).
-        data_start = input.find('[', id_end) + 1
-        data_end = input.find(']', data_start)
+        data_start = input.find("[", id_end) + 1
+        data_end = input.find("]", data_start)
 
-        data = ''
+        data = ""
         if data_start != -1 and data_end != -1:
             data = input[data_start:data_end]
 
@@ -341,14 +323,16 @@ class RobotInfo:
 
     """
 
-    def __init__(self,
-                 model=None,
-                 revision=None,
-                 is_virtual=None,
-                 fw_major_rev=None,
-                 fw_minor_rev=None,
-                 fw_patch_num=None,
-                 serial=None):
+    def __init__(
+        self,
+        model=None,
+        revision=None,
+        is_virtual=None,
+        fw_major_rev=None,
+        fw_minor_rev=None,
+        fw_patch_num=None,
+        serial=None,
+    ):
         self.model = model
         self.revision = revision
         self.is_virtual = is_virtual
@@ -358,14 +342,14 @@ class RobotInfo:
         self.serial = serial
         self.rt_message_capable = False
 
-        if self.model == 'Meca500':
+        if self.model == "Meca500":
             self.num_joints = 6
-        elif self.mode == 'scara':
+        elif self.mode == "scara":
             self.num_joints = 4
         elif self.model == None:
             self.num_joints = 1
         else:
-            raise ValueError('Invalid robot model: {}'.format(self.model))
+            raise ValueError("Invalid robot model: {}".format(self.model))
 
     @classmethod
     def from_command_response_string(cls, input_string):
@@ -379,17 +363,19 @@ class RobotInfo:
             Input string to be parsed.
 
         """
-        robot_info_regex = re.compile(r'Connected to (\b.*\b) R(\d)(-virtual)? v(\d+)\.(\d+)\.(\d+)')
+        robot_info_regex = re.compile(r"Connected to (\b.*\b) R(\d)(-virtual)? v(\d+)\.(\d+)\.(\d+)")
         try:
             matches = robot_info_regex.match(input_string).groups()
-            return cls(model=matches[0],
-                       revision=int(matches[1]),
-                       is_virtual=(matches[2] != None),
-                       fw_major_rev=int(matches[3]),
-                       fw_minor_rev=int(matches[4]),
-                       fw_patch_num=int(matches[5]))
+            return cls(
+                model=matches[0],
+                revision=int(matches[1]),
+                is_virtual=(matches[2] != None),
+                fw_major_rev=int(matches[3]),
+                fw_minor_rev=int(matches[4]),
+                fw_patch_num=int(matches[5]),
+            )
         except:
-            raise ValueError('Could not parse robot info string {}'.format(input_string))
+            raise ValueError("Could not parse robot info string {}".format(input_string))
 
 
 class RobotState:
@@ -591,24 +577,18 @@ class RobotEvents:
         self.on_brakes_activated.set()
 
     def clear_all(self):
-        """Clear all events.
-
-        """
+        """Clear all events."""
         for attr in self.__dict__:
             self.__dict__[attr].clear()
 
     def abort_all_except_on_connected(self):
-        """Abort all events, except for on_connected.
-
-        """
+        """Abort all events, except for on_connected."""
         for attr in self.__dict__:
-            if attr != 'on_connected':
+            if attr != "on_connected":
                 self.__dict__[attr].abort()
 
     def clear_abort_all(self):
-        """Clear aborts for all events.
-
-        """
+        """Clear aborts for all events."""
         for attr in self.__dict__:
             self.__dict__[attr].clear_abort()
 
@@ -689,7 +669,7 @@ class RobotCallbacks:
         self.on_offline_program_state = None
 
 
-class CallbackQueue():
+class CallbackQueue:
     """Queue class for storing triggered callbacks. Only registered callbacks are added to the queue.
 
     Attributes
@@ -710,9 +690,7 @@ class CallbackQueue():
                 self._registered_callbacks.add(attr)
 
     def qsize(self):
-        """Returns the queue size.
-
-        """
+        """Returns the queue size."""
         return self._queue.qsize()
 
     def put(self, callback_name, data=None):
@@ -761,4 +739,4 @@ def string_to_floats(input_string):
         Returns converted list of floats.
 
     """
-    return [float(x) for x in input_string.split(',')]
+    return [float(x) for x in input_string.split(",")]

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import logging
 import ipaddress
 import time
@@ -31,8 +30,10 @@ def disconnect_on_exception(func):
         except BaseException as e:
             if self._disconnect_on_exception:
                 self.Disconnect()
-                raise DisconnectError('Automatically disconnected as a result of exception, '
-                                      'set \'disconnect_on_exception\' to False to disable.') from e
+                raise DisconnectError(
+                    "Automatically disconnected as a result of exception, "
+                    "set 'disconnect_on_exception' to False to disable."
+                ) from e
             else:
                 raise e
 
@@ -106,9 +107,7 @@ class Robot:
     """
 
     def __init__(self):
-        """Constructor for an instance of the Controller class.
-
-        """
+        """Constructor for an instance of the Controller class."""
         self._is_initialized = False
 
         self._address = None
@@ -187,7 +186,7 @@ class Robot:
             return func(*args, **kwargs)
         except BaseException as e:
             if command_socket:
-                command_socket.sendall(b'DeactivateRobot\0')
+                command_socket.sendall(b"DeactivateRobot\0")
             raise e
 
     @staticmethod
@@ -203,7 +202,7 @@ class Robot:
             Thread-safe queue to push complete messages onto.
 
         """
-        remainder = ''
+        remainder = ""
         while True:
             # Wait for a message from the robot.
             try:
@@ -213,13 +212,13 @@ class Robot:
                 return
 
             # Socket has been closed.
-            if raw_responses == b'':
+            if raw_responses == b"":
                 return
 
-            responses = raw_responses.decode('ascii').split('\0')
+            responses = raw_responses.decode("ascii").split("\0")
 
             # Add the remainder from the previous message if necessary.
-            if remainder != '':
+            if remainder != "":
                 responses[0] = remainder + responses[0]
 
             # Set the remainder as the last response (which is '' if complete).
@@ -250,7 +249,7 @@ class Robot:
             if command == TERMINATE:
                 return
             else:
-                robot_socket.sendall((command + '\0').encode('ascii'))
+                robot_socket.sendall((command + "\0").encode("ascii"))
 
     @staticmethod
     def _connect_socket(logger, address, port):
@@ -271,7 +270,7 @@ class Robot:
             Successfully-connected socket object.
 
         """
-        logger.debug('Attempting to connect to %s:%s', address, port)
+        logger.debug("Attempting to connect to %s:%s", address, port)
 
         # Create socket and attempt connection.
         new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -279,10 +278,10 @@ class Robot:
         try:
             new_socket.connect((address, port))
         except:
-            logger.error('Unable to connect to %s:%s.', address, port)
+            logger.error("Unable to connect to %s:%s.", address, port)
             return None
 
-        logger.debug('Connected to %s:%s.', address, port)
+        logger.debug("Connected to %s:%s.", address, port)
         return new_socket
 
     @staticmethod
@@ -300,7 +299,7 @@ class Robot:
         timeout : float or None
             If none, block forever on empty queue, if 0, don't block, else block with timeout.
         """
-        block_on_empty = (timeout != 0)
+        block_on_empty = timeout != 0
 
         while True:
             # If we are not blocking on empty, return if empty.
@@ -332,14 +331,14 @@ class Robot:
 
         if not (self._monitor_handler_thread and self._monitor_handler_thread.is_alive()):
             self.Disconnect()
-            raise InvalidStateError('Monitor response handler thread has unexpectedly terminated.')
+            raise InvalidStateError("Monitor response handler thread has unexpectedly terminated.")
 
         if self._offline_mode:  # Do not check rx threads in offline mode.
             return
 
         if not (self._monitor_rx_thread and self._monitor_rx_thread.is_alive()):
             self.Disconnect()
-            raise InvalidStateError('Monitor rx thread has unexpectedly terminated.')
+            raise InvalidStateError("Monitor rx thread has unexpectedly terminated.")
 
     def _check_command_threads(self):
         """Check that the threads which handle robot command messages are alive.
@@ -350,20 +349,20 @@ class Robot:
 
         if not (self._command_response_handler_thread and self._command_response_handler_thread.is_alive()):
             self.Disconnect()
-            raise InvalidStateError('No command response handler thread, are you in monitor mode?')
+            raise InvalidStateError("No command response handler thread, are you in monitor mode?")
 
         if self._offline_mode:  # Do not check rx threads in offline mode.
             return
 
         if not (self._command_rx_thread and self._command_rx_thread.is_alive()):
             self.Disconnect()
-            raise InvalidStateError('No command rx thread, are you in monitor mode?')
+            raise InvalidStateError("No command rx thread, are you in monitor mode?")
 
         # If tx thread is down, attempt to directly send deactivate command to the robot.
         if not (self._command_tx_thread and self._command_tx_thread.is_alive()):
-            self._command_socket.sendall(b'DeactivateRobot\0')
+            self._command_socket.sendall(b"DeactivateRobot\0")
             self.Disconnect()
-            raise InvalidStateError('No command tx thread, are you in monitor mode?')
+            raise InvalidStateError("No command tx thread, are you in monitor mode?")
 
     def _check_internal_states(self):
         """Check that the threads which handle robot messages are alive.
@@ -372,7 +371,7 @@ class Robot:
 
         """
         if self._monitor_mode:
-            raise InvalidStateError('Cannot send command while in monitoring mode.')
+            raise InvalidStateError("Cannot send command while in monitoring mode.")
         else:
             self._check_command_threads()
 
@@ -392,7 +391,7 @@ class Robot:
 
         # Assemble arguments into a string and concatenate to end of command.
         if arg_list:
-            command = command + '(' + ','.join([str(x) for x in arg_list]) + ')'
+            command = command + "(" + ",".join([str(x) for x in arg_list]) + ")"
 
         # Put command into tx queue.
         self._command_tx_queue.put(command)
@@ -419,37 +418,40 @@ class Robot:
         """
         # We use the _deactivate_on_exception function which wraps func around try...except and disconnects on error.
         # The first argument is the actual function to be executed, the second is the command socket.
-        thread = threading.Thread(target=self._deactivate_on_exception, args=(
-            target,
-            self._command_socket,
-            *args,
-        ))
+        thread = threading.Thread(
+            target=self._deactivate_on_exception,
+            args=(
+                target,
+                self._command_socket,
+                *args,
+            ),
+        )
         thread.start()
         return thread
 
     def _initialize_command_socket(self):
-        """Establish the command socket and the associated thread.
-
-        """
+        """Establish the command socket and the associated thread."""
         if self._offline_mode:
             return
 
         if self._command_socket is not None:
-            raise InvalidStateError('Cannot connect since existing command socket exists.')
+            raise InvalidStateError("Cannot connect since existing command socket exists.")
 
         try:
             self._command_socket = self._connect_socket(self.logger, self._address, MX_ROBOT_TCP_PORT_CONTROL)
 
             if self._command_socket is None:
-                raise CommunicationError('Command socket could not be created. Is the IP address correct?')
+                raise CommunicationError("Command socket could not be created. Is the IP address correct?")
 
             # Create rx thread for command socket communication.
-            self._command_rx_thread = self._launch_thread(target=self._handle_socket_rx,
-                                                          args=(self._command_socket, self._command_rx_queue))
+            self._command_rx_thread = self._launch_thread(
+                target=self._handle_socket_rx, args=(self._command_socket, self._command_rx_queue)
+            )
 
             # Create tx thread for command socket communication.
-            self._command_tx_thread = self._launch_thread(target=self._handle_socket_tx,
-                                                          args=(self._command_socket, self._command_tx_queue))
+            self._command_tx_thread = self._launch_thread(
+                target=self._handle_socket_tx, args=(self._command_socket, self._command_tx_queue)
+            )
 
         except:
             # Clean up threads and connections on error.
@@ -457,24 +459,23 @@ class Robot:
             raise
 
     def _initialize_monitoring_socket(self):
-        """Establish the monitoring socket and the associated thread.
-
-        """
+        """Establish the monitoring socket and the associated thread."""
         if self._offline_mode:
             return
 
         if self._monitor_socket is not None:
-            raise InvalidStateError('Cannot connect since existing monitor socket exists.')
+            raise InvalidStateError("Cannot connect since existing monitor socket exists.")
 
         try:
             self._monitor_socket = self._connect_socket(self.logger, self._address, MX_ROBOT_TCP_PORT_FEED)
 
             if self._monitor_socket is None:
-                raise CommunicationError('Monitor socket could not be created. Is the IP address correct?')
+                raise CommunicationError("Monitor socket could not be created. Is the IP address correct?")
 
             # Create rx thread for monitor socket communication.
-            self._monitor_rx_thread = self._launch_thread(target=self._handle_socket_rx,
-                                                          args=(self._monitor_socket, self._monitor_rx_queue))
+            self._monitor_rx_thread = self._launch_thread(
+                target=self._handle_socket_rx, args=(self._monitor_socket, self._monitor_rx_queue)
+            )
 
         except:
             # Clean up threads and connections on error.
@@ -494,18 +495,18 @@ class Robot:
         try:
             response = message_queue.get(block=True, timeout=self.default_timeout)
         except queue.Empty:
-            self.logger.error('No response received within timeout interval.')
+            self.logger.error("No response received within timeout interval.")
             self.Disconnect()
-            raise CommunicationError('No response received within timeout interval.')
+            raise CommunicationError("No response received within timeout interval.")
         except BaseException:
             self.Disconnect()
             raise
 
         # Check that response is appropriate.
         if response.id != MX_ST_CONNECTED:
-            self.logger.error('Connection error: {}'.format(response))
+            self.logger.error("Connection error: {}".format(response))
             self.Disconnect()
-            raise CommunicationError('Connection error: {}'.format(response))
+            raise CommunicationError("Connection error: {}".format(response))
 
         # Attempt to parse robot return data.
         self._robot_info = RobotInfo.from_command_response_string(response.data)
@@ -513,9 +514,7 @@ class Robot:
         self._robot_state = RobotState(self._robot_info.num_joints)
 
     def _initialize_command_connection(self):
-        """Attempt to connect to the command port of the Mecademic Robot.
-
-        """
+        """Attempt to connect to the command port of the Mecademic Robot."""
         self._receive_welcome_message(self._command_rx_queue)
 
         self._command_response_handler_thread = self._launch_thread(target=self._command_response_handler, args=())
@@ -538,16 +537,14 @@ class Robot:
         return
 
     def _shut_down_queue_threads(self):
-        """Attempt to gracefully shut down threads which read from queues.
-
-        """
+        """Attempt to gracefully shut down threads which read from queues."""
         # Join threads which wait on a queue by sending terminate to the queue.
         # Don't acquire _main_lock since these threads require _main_lock to finish processing.
         if self._command_tx_thread is not None:
             try:
                 self._command_tx_queue.put(TERMINATE)
             except Exception as e:
-                self.logger.error('Error shutting down tx thread. ' + str(e))
+                self.logger.error("Error shutting down tx thread. " + str(e))
             self._command_tx_thread.join(timeout=self.default_timeout)
             self._command_tx_thread = None
 
@@ -555,7 +552,7 @@ class Robot:
             try:
                 self._command_rx_queue.put(TERMINATE)
             except Exception as e:
-                self.logger.error('Error shutting down command response handler thread. ' + str(e))
+                self.logger.error("Error shutting down command response handler thread. " + str(e))
             self._command_response_handler_thread.join(timeout=self.default_timeout)
             self._command_response_handler_thread = None
 
@@ -563,27 +560,25 @@ class Robot:
             try:
                 self._monitor_rx_queue.put(TERMINATE)
             except Exception as e:
-                self.logger.error('Error shutting down monitor handler thread. ' + str(e))
+                self.logger.error("Error shutting down monitor handler thread. " + str(e))
             self._monitor_handler_thread.join(timeout=self.default_timeout)
             self._monitor_handler_thread = None
 
     def _shut_down_socket_threads(self):
-        """Attempt to gracefully shut down threads which read from sockets.
-
-        """
+        """Attempt to gracefully shut down threads which read from sockets."""
         with self._main_lock:
             # Shutdown socket to terminate the rx threads.
             if self._command_socket is not None:
                 try:
                     self._command_socket.shutdown(socket.SHUT_RDWR)
                 except Exception as e:
-                    self.logger.error('Error shutting down command socket. ' + str(e))
+                    self.logger.error("Error shutting down command socket. " + str(e))
 
             if self._monitor_socket is not None:
                 try:
                     self._monitor_socket.shutdown(socket.SHUT_RDWR)
                 except Exception as e:
-                    self.logger.error('Error shutting down monitor socket. ' + str(e))
+                    self.logger.error("Error shutting down monitor socket. " + str(e))
 
             # Join threads which wait on a socket.
             if self._command_rx_thread is not None:
@@ -638,7 +633,7 @@ class Robot:
         """
         with self._main_lock:
             if not isinstance(n, int):
-                raise TypeError('Please provide an integer checkpoint id.')
+                raise TypeError("Please provide an integer checkpoint id.")
 
             # Find the correct dictionary to store checkpoint.
             if MX_CHECKPOINT_ID_MIN <= n <= MX_CHECKPOINT_ID_MAX:
@@ -648,7 +643,7 @@ class Robot:
             else:
                 raise ValueError
 
-            self.logger.debug('Setting checkpoint %s', n)
+            self.logger.debug("Setting checkpoint %s", n)
 
             if n not in checkpoints_dict:
                 checkpoints_dict[n] = list()
@@ -656,14 +651,12 @@ class Robot:
             checkpoints_dict[n].append(event)
 
             if send_to_robot:
-                self._send_command('SetCheckpoint', [n])
+                self._send_command("SetCheckpoint", [n])
 
             return event
 
     def _invalidate_checkpoints(self):
-        '''Unblock all waiting checkpoints and have them throw InterruptException.
-
-        '''
+        """Unblock all waiting checkpoints and have them throw InterruptException."""
 
         for checkpoints_dict in [self._internal_checkpoints, self._user_checkpoints]:
             for key, checkpoints_list in checkpoints_dict.items():
@@ -694,9 +687,7 @@ class Robot:
             checkpoint.wait()
 
     def _monitor_handler(self):
-        """Handle messages from the monitoring port of the robot.
-
-        """
+        """Handle messages from the monitoring port of the robot."""
         # Variables to hold joint positions and poses while waiting for timestamp.
         joint_positions = None
         end_effector_pose = None
@@ -711,7 +702,7 @@ class Robot:
             if response == TERMINATE:
                 return
 
-            self._callback_queue.put('on_monitor_message', response)
+            self._callback_queue.put("on_monitor_message", response)
 
             queue_size = self._monitor_rx_queue.qsize()
             if queue_size > self._robot_state.max_queue_size:
@@ -764,9 +755,7 @@ class Robot:
                             self._file_logger.write_fields(time.time_ns() / 1000, self._robot_state)
 
     def _command_response_handler(self):
-        """Handle received messages on the command socket.
-
-        """
+        """Handle received messages on the command socket."""
         while True:
             # Wait for a response to be available from the queue.
             response = self._command_rx_queue.get(block=True)
@@ -775,7 +764,7 @@ class Robot:
             if response == TERMINATE:
                 return
 
-            self._callback_queue.put('on_command_message', response)
+            self._callback_queue.put("on_command_message", response)
 
             with self._main_lock:
 
@@ -792,7 +781,7 @@ class Robot:
                     if self._clear_motion_requests <= 1:
                         self._clear_motion_requests = 0
                         self._robot_events.on_motion_cleared.set()
-                        self._callback_queue.put('on_motion_cleared')
+                        self._callback_queue.put("on_motion_cleared")
                     else:
                         self._clear_motion_requests -= 1
 
@@ -800,11 +789,11 @@ class Robot:
                     if bool(int(response.data)):
                         self._robot_events.on_p_stop_reset.clear()
                         self._robot_events.on_p_stop.set()
-                        self._callback_queue.put('on_p_stop')
+                        self._callback_queue.put("on_p_stop")
                     else:
                         self._robot_events.on_p_stop.clear()
                         self._robot_events.on_p_stop_reset.set()
-                        self._callback_queue.put('on_p_stop_reset')
+                        self._callback_queue.put("on_p_stop_reset")
 
                 elif response.id == MX_ST_BRAKES_ON:
                     self._robot_events.on_brakes_deactivated.clear()
@@ -816,7 +805,7 @@ class Robot:
 
                 elif response.id == MX_ST_OFFLINE_START:
                     self._robot_events.on_offline_program_started.set()
-                    self._callback_queue.put('on_offline_program_state')
+                    self._callback_queue.put("on_offline_program_state")
 
                 elif response.id == MX_ST_NO_OFFLINE_SAVED:
                     self._robot_events.on_offline_program_started.abort()
@@ -901,8 +890,10 @@ class Robot:
             # The data is stored as [timestamp, index, {measurements...}]
             timestamp, index, *measurements = string_to_floats(response.data)
             # Record accelerometer measurement only if newer.
-            if (index not in self._robot_state.accelerometer
-                    or timestamp > self._robot_state.accelerometer[index].timestamp):
+            if (
+                index not in self._robot_state.accelerometer
+                or timestamp > self._robot_state.accelerometer[index].timestamp
+            ):
                 self._robot_state.accelerometer[index] = TimestampedData(timestamp, measurements)
 
     def _handle_robot_status_response(self, response):
@@ -915,7 +906,7 @@ class Robot:
 
         """
         assert response.id == MX_ST_GET_STATUS_ROBOT
-        status_flags = [bool(int(x)) for x in response.data.split(',')]
+        status_flags = [bool(int(x)) for x in response.data.split(",")]
 
         if self._robot_state.activation_state != status_flags[0]:
             if status_flags[0]:
@@ -923,19 +914,19 @@ class Robot:
                 self._robot_events.on_activated.set()
                 self._robot_events.on_brakes_activated.clear()
                 self._robot_events.on_brakes_deactivated.set()
-                self._callback_queue.put('on_activated')
+                self._callback_queue.put("on_activated")
             else:
                 self._robot_events.on_activated.clear()
                 self._robot_events.on_deactivated.set()
                 self._robot_events.on_brakes_deactivated.clear()
                 self._robot_events.on_brakes_activated.set()
-                self._callback_queue.put('on_deactivated')
+                self._callback_queue.put("on_deactivated")
             self._robot_state.activation_state = status_flags[0]
 
         if self._robot_state.homing_state != status_flags[1]:
             if status_flags[1]:
                 self._robot_events.on_homed.set()
-                self._callback_queue.put('on_homed')
+                self._callback_queue.put("on_homed")
             else:
                 self._robot_events.on_homed.clear()
             self._robot_state.homing_state = status_flags[1]
@@ -944,11 +935,11 @@ class Robot:
             if status_flags[2]:
                 self._robot_events.on_deactivate_sim.clear()
                 self._robot_events.on_activate_sim.set()
-                self._callback_queue.put('on_activate_sim')
+                self._callback_queue.put("on_activate_sim")
             else:
                 self._robot_events.on_activate_sim.clear()
                 self._robot_events.on_deactivate_sim.set()
-                self._callback_queue.put('on_deactivate_sim')
+                self._callback_queue.put("on_deactivate_sim")
             self._robot_state.simulation_mode = status_flags[2]
 
         if self._robot_state.error_status != status_flags[3]:
@@ -957,23 +948,23 @@ class Robot:
                 self._robot_events.on_error.set()
                 self._robot_events.abort_all_except_on_connected()
                 self._robot_events.on_error_reset.clear()
-                self._callback_queue.put('on_error')
+                self._callback_queue.put("on_error")
             else:
                 self._robot_events.clear_abort_all()
                 self._robot_events.on_error.clear()
                 self._robot_events.on_error_reset.set()
-                self._callback_queue.put('on_error_reset')
+                self._callback_queue.put("on_error_reset")
             self._robot_state.error_status = status_flags[3]
 
         if self._robot_state.pause_motion_status != status_flags[4]:
             if status_flags[4]:
                 self._robot_events.on_motion_resumed.clear()
                 self._robot_events.on_motion_paused.set()
-                self._callback_queue.put('on_motion_paused')
+                self._callback_queue.put("on_motion_paused")
             else:
                 self._robot_events.on_motion_paused.clear()
                 self._robot_events.on_motion_resumed.set()
-                self._callback_queue.put('on_motion_resumed')
+                self._callback_queue.put("on_motion_resumed")
             self._robot_state.pause_motion_status = status_flags[4]
 
         if self._robot_state.end_of_block_status != status_flags[5]:
@@ -984,7 +975,7 @@ class Robot:
             self._robot_state.end_of_block_status = status_flags[5]
 
         self._robot_events.on_status_updated.set()
-        self._callback_queue.put('on_status_updated')
+        self._callback_queue.put("on_status_updated")
 
     def _handle_checkpoint_response(self, response):
         """Handle the checkpoint message from the robot, set the appropriate events, etc.
@@ -1005,11 +996,11 @@ class Robot:
             if not self._user_checkpoints[checkpoint_id]:
                 self._user_checkpoints.pop(checkpoint_id)
             # If there are events are waiting on 'any checkpoint', set them all.
-            if '*' in self._internal_checkpoints and self._internal_checkpoints['*']:
-                for event in self._internal_checkpoints.pop('*'):
+            if "*" in self._internal_checkpoints and self._internal_checkpoints["*"]:
+                for event in self._internal_checkpoints.pop("*"):
                     event.set()
             # Enque the on_checkpoint_reached callback.
-            self._callback_queue.put('on_checkpoint_reached', checkpoint_id)
+            self._callback_queue.put("on_checkpoint_reached", checkpoint_id)
 
         # Check internal checkpoints.
         elif checkpoint_id in self._internal_checkpoints and self._internal_checkpoints[checkpoint_id]:
@@ -1018,7 +1009,7 @@ class Robot:
             if not self._internal_checkpoints[checkpoint_id]:
                 self._internal_checkpoints.pop(checkpoint_id)
         else:
-            self.logger.warning('Received un-tracked checkpoint. Please use ExpectExternalCheckpoint() to track.')
+            self.logger.warning("Received un-tracked checkpoint. Please use ExpectExternalCheckpoint() to track.")
 
     #####################################################################################
     # Public methods = Pascal case is used to maintain consistency with text and c++ API.
@@ -1039,27 +1030,27 @@ class Robot:
         """
         # Check that callbacks are an instance of the appropriate class.
         if not isinstance(callbacks, RobotCallbacks):
-            raise TypeError('Callbacks object is not the appropriate class.')
+            raise TypeError("Callbacks object is not the appropriate class.")
 
         if self._monitor_handler_thread or self._command_response_handler_thread:
-            raise InvalidStateError('Callbacks cannot be set if already connected.')
+            raise InvalidStateError("Callbacks cannot be set if already connected.")
 
         self._callback_queue = CallbackQueue(callbacks)
 
         self._robot_callbacks = callbacks
         if run_callbacks_in_separate_thread:
-            self._callback_thread = threading.Thread(target=self._handle_callbacks,
-                                                     args=(
-                                                         self.logger,
-                                                         self._callback_queue,
-                                                         self._robot_callbacks,
-                                                     ))
+            self._callback_thread = threading.Thread(
+                target=self._handle_callbacks,
+                args=(
+                    self.logger,
+                    self._callback_queue,
+                    self._robot_callbacks,
+                ),
+            )
             self._callback_thread.start()
 
     def UnregisterCallbacks(self):
-        """Unregister callback functions and terminate callback handler thread if applicable.
-
-        """
+        """Unregister callback functions and terminate callback handler thread if applicable."""
         if self._callback_thread:
             self._callback_queue.put(TERMINATE)
             self._callback_thread.join(timeout=self.default_timeout)
@@ -1069,12 +1060,11 @@ class Robot:
         self._callback_thread = None
 
     def RunCallbacks(self):
-        """Run all triggered callback functions.
-
-        """
+        """Run all triggered callback functions."""
         if self._callback_thread:
             raise InvalidStateError(
-                'Cannot call RunCallbacks since callback handler is already running in separate thread.')
+                "Cannot call RunCallbacks since callback handler is already running in separate thread."
+            )
 
         # Setting timeout=0 means we don't block on an empty queue.
         self._handle_callbacks(self.logger, self._callback_queue, self._robot_callbacks, timeout=0)
@@ -1109,7 +1099,7 @@ class Robot:
 
             # Check that the ip address is valid and set address.
             if not isinstance(address, str):
-                raise TypeError('Invalid IP address.')
+                raise TypeError("Invalid IP address.")
             ipaddress.ip_address(address)
             self._address = address
 
@@ -1141,19 +1131,17 @@ class Robot:
             self._robot_events.on_pose_updated.set()
 
             self._robot_events.on_connected.set()
-            self._callback_queue.put('on_connected')
+            self._callback_queue.put("on_connected")
 
         # Fetching the serial number must occur outside main_lock.
         if not self._monitor_mode:
-            serial_response = self.SendCustomCommand('GetRobotSerial', expected_responses=[MX_ST_GET_ROBOT_SERIAL])
+            serial_response = self.SendCustomCommand("GetRobotSerial", expected_responses=[MX_ST_GET_ROBOT_SERIAL])
             serial_response_message = serial_response.wait_for_data(timeout=self.default_timeout)
             self._robot_info.serial = serial_response_message.data
 
     def Disconnect(self):
-        """Disconnects Mecademic Robot object from the physical Mecademic robot.
-
-        """
-        self.logger.debug('Disconnecting from the robot.')
+        """Disconnects Mecademic Robot object from the physical Mecademic robot."""
+        self.logger.debug("Disconnecting from the robot.")
 
         # Don't acquire _main_lock while shutting down queues to avoid deadlock.
         self._shut_down_queue_threads()
@@ -1172,94 +1160,80 @@ class Robot:
                 try:
                     self._command_socket.close()
                 except Exception as e:
-                    self.logger.error('Error closing command socket. ' + str(e))
+                    self.logger.error("Error closing command socket. " + str(e))
                 self._command_socket = None
             if self._monitor_socket is not None:
                 try:
                     self._monitor_socket.close()
                 except Exception as e:
-                    self.logger.error('Error closing monitor socket. ' + str(e))
+                    self.logger.error("Error closing monitor socket. " + str(e))
                 self._monitor_socket = None
 
             self._robot_events.on_connected.clear()
             self._robot_events.on_disconnected.set()
-            self._callback_queue.put('on_disconnected')
+            self._callback_queue.put("on_disconnected")
 
             self._robot_events.abort_all_except_on_connected()
 
     @disconnect_on_exception
     def ActivateRobot(self):
-        """Activate the robot.
-
-        """
+        """Activate the robot."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('ActivateRobot')
+            self._send_command("ActivateRobot")
 
         if self._enable_synchronous_mode:
             self.WaitActivated()
 
     @disconnect_on_exception
     def Home(self):
-        """Home the robot.
-
-        """
+        """Home the robot."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('Home')
+            self._send_command("Home")
 
         if self._enable_synchronous_mode:
             self.WaitHomed()
 
     @disconnect_on_exception
     def ActivateAndHome(self):
-        """Utility function that combines activate and home.
-
-        """
+        """Utility function that combines activate and home."""
         self.ActivateRobot()
         self.Home()
 
     @disconnect_on_exception
     def PauseMotion(self):
-        """Immediately pause robot motion.
-
-        """
+        """Immediately pause robot motion."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('PauseMotion')
+            self._send_command("PauseMotion")
 
         if self._enable_synchronous_mode:
             self._robot_events.on_motion_paused.wait(timeout=self.default_timeout)
 
     @disconnect_on_exception
     def ResumeMotion(self):
-        """Un-pause robot motion.
-
-        """
+        """Un-pause robot motion."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('ResumeMotion')
+            self._send_command("ResumeMotion")
 
         if self._enable_synchronous_mode:
             self.WaitMotionResumed(timeout=self.default_timeout)
 
     @disconnect_on_exception
     def DeactivateRobot(self):
-        """Deactivate the robot.
-
-        """
+        """Deactivate the robot."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('DeactivateRobot')
+            self._send_command("DeactivateRobot")
 
         if self._enable_synchronous_mode:
             self.WaitDeactivated()
 
     @disconnect_on_exception
     def ClearMotion(self):
-        """Clear the motion queue, includes implicit PauseMotion command.
-
-        """
+        """Clear the motion queue, includes implicit PauseMotion command."""
         with self._main_lock:
             self._check_internal_states()
 
@@ -1267,7 +1241,7 @@ class Robot:
             self._clear_motion_requests += 1
             self._robot_events.on_motion_cleared.clear()
 
-            self._send_command('ClearMotion')
+            self._send_command("ClearMotion")
 
             # Clearing the motion queue also requires clearing checkpoints, as the robot will not send them anymore.
             self._invalidate_checkpoints()
@@ -1286,9 +1260,9 @@ class Robot:
 
         """
         if len(args) != self._robot_info.num_joints:
-            raise ValueError('Incorrect number of joints sent to command.')
+            raise ValueError("Incorrect number of joints sent to command.")
 
-        self._send_motion_command('MoveJoints', args)
+        self._send_motion_command("MoveJoints", args)
 
     @disconnect_on_exception
     def MoveJointsRel(self, *args):
@@ -1301,9 +1275,9 @@ class Robot:
 
         """
         if len(args) != self._robot_info.num_joints:
-            raise ValueError('Incorrect number of joints sent to command.')
+            raise ValueError("Incorrect number of joints sent to command.")
 
-        self._send_motion_command('MoveJointsRel', args)
+        self._send_motion_command("MoveJointsRel", args)
 
     @disconnect_on_exception
     def MoveJointsVel(self, *args):
@@ -1316,9 +1290,9 @@ class Robot:
 
         """
         if len(args) != self._robot_info.num_joints:
-            raise ValueError('Incorrect number of joints sent to command.')
+            raise ValueError("Incorrect number of joints sent to command.")
 
-        self._send_motion_command('MoveJointsVel', args)
+        self._send_motion_command("MoveJointsVel", args)
 
     @disconnect_on_exception
     def MovePose(self, x, y, z, alpha, beta, gamma):
@@ -1332,7 +1306,7 @@ class Robot:
             Desired end effector orientation in degrees.
 
         """
-        self._send_motion_command('MovePose', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MovePose", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def MoveLin(self, x, y, z, alpha, beta, gamma):
@@ -1346,7 +1320,7 @@ class Robot:
             Desired end effector orientation in degrees.
 
         """
-        self._send_motion_command('MoveLin', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MoveLin", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def MoveLinRelTRF(self, x, y, z, alpha, beta, gamma):
@@ -1360,7 +1334,7 @@ class Robot:
             Desired orientation change in deg.
 
         """
-        self._send_motion_command('MoveLinRelTRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MoveLinRelTRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def MoveLinRelWRF(self, x, y, z, alpha, beta, gamma):
@@ -1375,7 +1349,7 @@ class Robot:
             Desired orientation change in deg.
 
         """
-        self._send_motion_command('MoveLinRelWRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MoveLinRelWRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def MoveLinVelTRF(self, x, y, z, alpha, beta, gamma):
@@ -1391,7 +1365,7 @@ class Robot:
             Desired angular velocity in degrees/s.
 
         """
-        self._send_motion_command('MoveLinVelTRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MoveLinVelTRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def MoveLinVelWRF(self, x, y, z, alpha, beta, gamma):
@@ -1407,7 +1381,7 @@ class Robot:
             Desired angular velocity in degrees/s.
 
         """
-        self._send_motion_command('MoveLinVelWRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("MoveLinVelWRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def SetVelTimeout(self, t):
@@ -1421,7 +1395,7 @@ class Robot:
             Desired duration for velocity-mode motion commands.
 
         """
-        self._send_motion_command('SetVelTimeout', [t])
+        self._send_motion_command("SetVelTimeout", [t])
 
     @disconnect_on_exception
     def SetConf(self, shoulder, elbow, wrist):
@@ -1437,7 +1411,7 @@ class Robot:
             Wrist inverse kinematics parameter.
 
         """
-        self._send_motion_command('SetConf', [shoulder, elbow, wrist])
+        self._send_motion_command("SetConf", [shoulder, elbow, wrist])
 
     @disconnect_on_exception
     def SetAutoConf(self, e):
@@ -1449,7 +1423,7 @@ class Robot:
             If true, robot will automatically choose the best configuation for the desired pose.
 
         """
-        self._send_motion_command('SetAutoConf', [int(e)])
+        self._send_motion_command("SetAutoConf", [int(e)])
 
     @disconnect_on_exception
     def SetConfTurn(self, n):
@@ -1461,7 +1435,7 @@ class Robot:
             The turn number for joint 6.
 
         """
-        self._send_motion_command('SetConfTurn', [n])
+        self._send_motion_command("SetConfTurn", [n])
 
     @disconnect_on_exception
     def SetAutoConfTurn(self, e):
@@ -1473,7 +1447,7 @@ class Robot:
             If true, robot will automatically choose the best configuation for the desired pose.
 
         """
-        self._send_motion_command('SetAutoConfTurn', [int(e)])
+        self._send_motion_command("SetAutoConfTurn", [int(e)])
 
     @disconnect_on_exception
     def SetBlending(self, p):
@@ -1487,7 +1461,7 @@ class Robot:
             Percentage blending between actions.
 
         """
-        self._send_motion_command('SetBlending', [p])
+        self._send_motion_command("SetBlending", [p])
 
     @disconnect_on_exception
     def SetCartAcc(self, p):
@@ -1499,7 +1473,7 @@ class Robot:
             Percentage of maximum acceleration.
 
         """
-        self._send_motion_command('SetCartAcc', [p])
+        self._send_motion_command("SetCartAcc", [p])
 
     @disconnect_on_exception
     def SetCartAngVel(self, w):
@@ -1511,7 +1485,7 @@ class Robot:
             Maximum angular velocity in deg/s.
 
         """
-        self._send_motion_command('SetCartAngVel', [w])
+        self._send_motion_command("SetCartAngVel", [w])
 
     @disconnect_on_exception
     def SetCartLinVel(self, w):
@@ -1525,21 +1499,17 @@ class Robot:
             Maximum angular velocity in deg/s.
 
         """
-        self._send_motion_command('SetCartLinVel', [w])
+        self._send_motion_command("SetCartLinVel", [w])
 
     @disconnect_on_exception
     def GripperOpen(self):
-        """Open the gripper.
-
-        """
-        self._send_motion_command('GripperOpen')
+        """Open the gripper."""
+        self._send_motion_command("GripperOpen")
 
     @disconnect_on_exception
     def GripperClose(self):
-        """Close the gripper.
-
-        """
-        self._send_motion_command('GripperClose')
+        """Close the gripper."""
+        self._send_motion_command("GripperClose")
 
     @disconnect_on_exception
     def MoveGripper(self, state=GRIPPER_OPEN):
@@ -1568,7 +1538,7 @@ class Robot:
             The desired force in percent.
 
         """
-        self._send_motion_command('SetGripperForce', [p])
+        self._send_motion_command("SetGripperForce", [p])
 
     @disconnect_on_exception
     def SetGripperVel(self, p):
@@ -1580,7 +1550,7 @@ class Robot:
             The desired velocity in percent.
 
         """
-        self._send_motion_command('SetGripperVel', [p])
+        self._send_motion_command("SetGripperVel", [p])
 
     @disconnect_on_exception
     def SetJointAcc(self, p):
@@ -1592,7 +1562,7 @@ class Robot:
             Target acceleration, in percent.
 
         """
-        self._send_motion_command('SetJointAcc', [p])
+        self._send_motion_command("SetJointAcc", [p])
 
     @disconnect_on_exception
     def SetJointVel(self, p):
@@ -1604,7 +1574,7 @@ class Robot:
             Target joint velocity, in percent.
 
         """
-        self._send_motion_command('SetJointVel', [p])
+        self._send_motion_command("SetJointVel", [p])
 
     @disconnect_on_exception
     def SetTRF(self, x, y, z, alpha, beta, gamma):
@@ -1618,7 +1588,7 @@ class Robot:
             Desired reference orientation in degrees.
 
         """
-        self._send_motion_command('SetTRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("SetTRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def SetWRF(self, x, y, z, alpha, beta, gamma):
@@ -1632,7 +1602,7 @@ class Robot:
             Desired reference orientation in degrees.
 
         """
-        self._send_motion_command('SetWRF', [x, y, z, alpha, beta, gamma])
+        self._send_motion_command("SetWRF", [x, y, z, alpha, beta, gamma])
 
     @disconnect_on_exception
     def SetCheckpoint(self, n):
@@ -1691,10 +1661,10 @@ class Robot:
         """
         with self._main_lock:
             self._check_internal_states()
-            if '*' not in self._internal_checkpoints:
-                self._internal_checkpoints['*'] = list()
+            if "*" not in self._internal_checkpoints:
+                self._internal_checkpoints["*"] = list()
             event = InterruptableEvent()
-            self._internal_checkpoints['*'].append(event)
+            self._internal_checkpoints["*"].append(event)
 
         return event.wait(timeout=timeout)
 
@@ -1866,24 +1836,20 @@ class Robot:
 
     @disconnect_on_exception
     def ResetError(self):
-        """Attempt to reset robot error.
-
-        """
+        """Attempt to reset robot error."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('ResetError')
+            self._send_command("ResetError")
 
         if self._enable_synchronous_mode:
             self._robot_events.on_error_reset.wait()
 
     @disconnect_on_exception
     def ResetPStop(self):
-        """Attempt to reset robot pstop.
-
-        """
+        """Attempt to reset robot pstop."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('ResetPStop')
+            self._send_command("ResetPStop")
 
         if self._enable_synchronous_mode:
             self._robot_events.on_p_stop_reset.wait()
@@ -1901,8 +1867,8 @@ class Robot:
         with self._main_lock:
             self._check_internal_states()
             if not self._robot_events.on_homed.is_set():
-                raise InvalidStateError('This command requires robot to be homed.')
-            self._send_command('Delay', [t])
+                raise InvalidStateError("This command requires robot to be homed.")
+            self._send_command("Delay", [t])
             if self._enable_synchronous_mode:
                 checkpoint = self._set_checkpoint_internal()
 
@@ -1957,13 +1923,13 @@ class Robot:
             self._check_internal_states()
             self._robot_events.on_offline_program_started.clear()
 
-            self._send_command('StartProgram', [n])
+            self._send_command("StartProgram", [n])
 
         if self._enable_synchronous_mode:
             try:
                 self._robot_events.on_offline_program_started.wait(timeout=timeout)
             except InterruptException:
-                raise InvalidStateError('Offline program start not confirmed. Does program {} exist?'.format(n))
+                raise InvalidStateError("Offline program start not confirmed. Does program {} exist?".format(n))
 
     ### Non-motion commands.
 
@@ -1994,9 +1960,9 @@ class Robot:
                 if self._robot_events.on_joints_updated.is_set():
                     self._robot_events.on_joints_updated.clear()
                     if self._robot_info.rt_message_capable:
-                        self._send_command('GetRtJointPos')
+                        self._send_command("GetRtJointPos")
                     else:
-                        self._send_command('GetJoints')
+                        self._send_command("GetJoints")
 
             if not self._robot_events.on_joints_updated.wait(timeout=timeout):
                 raise TimeoutError
@@ -2004,7 +1970,7 @@ class Robot:
         with self._main_lock:
             if include_timestamp:
                 if not self._robot_info.rt_message_capable:
-                    raise InvalidStateError('Cannot provide timestamp with current robot firmware or model.')
+                    raise InvalidStateError("Cannot provide timestamp with current robot firmware or model.")
                 else:
                     return copy.deepcopy(self._robot_state.target_joint_positions)
 
@@ -2036,9 +2002,9 @@ class Robot:
                 if self._robot_events.on_pose_updated.is_set():
                     self._robot_events.on_pose_updated.clear()
                     if self._robot_info.rt_message_capable:
-                        self._send_command('GetRtCartPos')
+                        self._send_command("GetRtCartPos")
                     else:
-                        self._send_command('GetPose')
+                        self._send_command("GetPose")
 
             if not self._robot_events.on_pose_updated.wait(timeout=timeout):
                 raise TimeoutError
@@ -2046,7 +2012,7 @@ class Robot:
         with self._main_lock:
             if include_timestamp:
                 if not self._robot_info.rt_message_capable:
-                    raise InvalidStateError('Cannot provide timestamp with current robot firmware or model.')
+                    raise InvalidStateError("Cannot provide timestamp with current robot firmware or model.")
                 else:
                     return copy.deepcopy(self._robot_state.target_end_effector_pose)
 
@@ -2068,9 +2034,9 @@ class Robot:
                 if self._robot_events.on_conf_updated.is_set():
                     self._robot_events.on_conf_updated.clear()
                     if self._robot_info.rt_message_capable:
-                        self._send_command('GetRtConf')
+                        self._send_command("GetRtConf")
                     else:
-                        self._send_command('GetConf')
+                        self._send_command("GetConf")
 
             if not self._robot_events.on_conf_updated.wait(timeout=timeout):
                 raise TimeoutError
@@ -2078,7 +2044,7 @@ class Robot:
         with self._main_lock:
             if include_timestamp:
                 if not self._robot_info.rt_message_capable:
-                    raise InvalidStateError('Cannot provide timestamp with current robot firmware or model.')
+                    raise InvalidStateError("Cannot provide timestamp with current robot firmware or model.")
                 else:
                     return copy.deepcopy(self._robot_state.target_joint_configurations)
 
@@ -2100,9 +2066,9 @@ class Robot:
                 if self._robot_events.on_conf_turn_updated.is_set():
                     self._robot_events.on_conf_turn_updated.clear()
                     if self._robot_info.rt_message_capable:
-                        self._send_command('GetRtConfTurn')
+                        self._send_command("GetRtConfTurn")
                     else:
-                        self._send_command('GetConfTurn')
+                        self._send_command("GetConfTurn")
 
             if not self._robot_events.on_conf_turn_updated.wait(timeout=timeout):
                 raise TimeoutError
@@ -2110,7 +2076,7 @@ class Robot:
         with self._main_lock:
             if include_timestamp:
                 if not self._robot_info.rt_message_capable:
-                    raise InvalidStateError('Cannot provide timestamp with current robot firmware or model.')
+                    raise InvalidStateError("Cannot provide timestamp with current robot firmware or model.")
                 else:
                     return copy.deepcopy(self._robot_state.target_last_joint_turn)
 
@@ -2128,7 +2094,7 @@ class Robot:
         """
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('SetMonitoringInterval', [t])
+            self._send_command("SetMonitoringInterval", [t])
 
     @disconnect_on_exception
     def SetRealTimeMonitoring(self, events):
@@ -2144,9 +2110,9 @@ class Robot:
         with self._main_lock:
             self._check_internal_states()
             if isinstance(events, list):
-                self._send_command('SetRealTimeMonitoring', events)
+                self._send_command("SetRealTimeMonitoring", events)
             else:
-                self._send_command('SetRealTimeMonitoring', [events])
+                self._send_command("SetRealTimeMonitoring", [events])
 
     @disconnect_on_exception
     def SetRTC(self, t):
@@ -2160,25 +2126,21 @@ class Robot:
         """
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('SetRTC', [t])
+            self._send_command("SetRTC", [t])
 
     @disconnect_on_exception
     def ActivateSim(self):
-        """Enables simulation mode. Motors don't move, but commands will be processed.
-
-        """
+        """Enables simulation mode. Motors don't move, but commands will be processed."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('ActivateSim')
+            self._send_command("ActivateSim")
 
     @disconnect_on_exception
     def DeactivateSim(self):
-        """Disables simulation mode. Motors don't move, but commands will be processed.
-
-        """
+        """Disables simulation mode. Motors don't move, but commands will be processed."""
         with self._main_lock:
             self._check_internal_states()
-            self._send_command('DeactivateSim')
+            self._send_command("DeactivateSim")
 
     @disconnect_on_exception
     def ActivateBrakes(self, activated=True):
@@ -2196,9 +2158,9 @@ class Robot:
         with self._main_lock:
             self._check_internal_states()
             if activated:
-                self._send_command('BrakesOn')
+                self._send_command("BrakesOn")
             else:
-                self._send_command('BrakesOff')
+                self._send_command("BrakesOff")
 
         if self._enable_synchronous_mode:
             if activated:
@@ -2249,20 +2211,16 @@ class Robot:
 
         """
         if self._file_logger != None:
-            raise InvalidStateError('Another file logging operation is in progress.')
+            raise InvalidStateError("Another file logging operation is in progress.")
 
-        self._file_logger = CSVFileLogger(self._robot_info,
-                                          self._robot_state,
-                                          fields,
-                                          file_path,
-                                          record_time=record_time)
+        self._file_logger = CSVFileLogger(
+            self._robot_info, self._robot_state, fields, file_path, record_time=record_time
+        )
 
     def EndLogging(self):
-        """Stop logging robot state to file.
-
-        """
+        """Stop logging robot state to file."""
         if self._file_logger == None:
-            raise InvalidStateError('No existing logger to stop.')
+            raise InvalidStateError("No existing logger to stop.")
 
         self._file_logger.end_log()
         self._file_logger = None

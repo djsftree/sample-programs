@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import queue
 import time
@@ -37,48 +36,50 @@ class CSVFileLogger:
             If true, current time will also be recorded in the text file. (Time is also available in filename.)
 
         """
-        current_date_time = time.strftime('%Y-%m-%d-%H-%M-%S')
+        current_date_time = time.strftime("%Y-%m-%d-%H-%M-%S")
 
-        serial_number_or_blank = ('_serial_' + robot_info.serial) if robot_info.serial else ""
+        serial_number_or_blank = ("_serial_" + robot_info.serial) if robot_info.serial else ""
 
         # Add unique name to file path.
-        file_name = (f"{robot_info.model}_R{robot_info.revision}_"
-                     f"v{robot_info.fw_major_rev}_{robot_info.fw_minor_rev}_{robot_info.fw_patch_num}_"
-                     f"log_{current_date_time}{serial_number_or_blank}.csv")
+        file_name = (
+            f"{robot_info.model}_R{robot_info.revision}_"
+            f"v{robot_info.fw_major_rev}_{robot_info.fw_minor_rev}_{robot_info.fw_patch_num}_"
+            f"log_{current_date_time}{serial_number_or_blank}.csv"
+        )
 
         if file_path:
             file_name = os.path.join(file_path, file_name)
 
         # If fields argument is None, log all compatible fields.
-        if fields == None:
+        if fields is None:
             fields = []
 
             if robot_info.rt_message_capable:
                 for attr in vars(robot_state):
-                    if attr.startswith('target') or attr.startswith('drive'):
+                    if attr.startswith("target") or attr.startswith("drive"):
                         fields.append(attr)
             else:
                 # Only the following fields are available if platform is not rt monitoring capable.
-                fields = ['target_joint_positions', 'target_end_effector_pose']
+                fields = ["target_joint_positions", "target_end_effector_pose"]
 
         # Set attributes.
-        self.file = open(file_name, 'w', newline='')
+        self.file = open(file_name, "w", newline="")
         self.fields = fields
         self.command_queue = queue.Queue()
         self.element_width = 10
         self.timestamp_element_width = 15
 
         # Write robot information.
-        self.file.write('ROBOT_INFORMATION\n')
-        for attr in ['model', 'revision', 'fw_major_rev', 'fw_minor_rev', 'fw_patch_num']:
-            self.file.write(f'{attr}, {getattr(robot_info, attr)}\n')
-        if robot_info.serial != None:
-            self.file.write(f'serial_number, {robot_info.serial}\n')
+        self.file.write("ROBOT_INFORMATION\n")
+        for attr in ["model", "revision", "fw_major_rev", "fw_minor_rev", "fw_patch_num"]:
+            self.file.write(f"{attr}, {getattr(robot_info, attr)}\n")
+        if robot_info.serial is not None:
+            self.file.write(f"serial_number, {robot_info.serial}\n")
         if record_time:
-            self.file.write(f'time_recorded, {current_date_time}\n')
+            self.file.write(f"time_recorded, {current_date_time}\n")
 
         # Write headers for logged data.
-        self.file.write('\nLOGGED_DATA\n')
+        self.file.write("\nLOGGED_DATA\n")
         self.write_field_headers(robot_state)
         self.write_field_and_element_headers(robot_info)
 
@@ -99,12 +100,12 @@ class CSVFileLogger:
             num_elements = len(getattr(robot_state, field).data)
 
             # Add appropriate number of commas to align columns.
-            commas = ',' * (num_elements - 1)
+            commas = "," * (num_elements - 1)
 
             # Calculate width of field given number of elements, accounting for commas.
             width = (self.element_width + 1) * num_elements - 1
-            self.file.write(f'{field + commas:{width}},')
-        self.file.write('\n')
+            self.file.write(f"{field + commas:{width}},")
+        self.file.write("\n")
 
     def write_field_and_element_headers(self, robot_info):
         """Write the full field name and element name in each column.
@@ -117,27 +118,31 @@ class CSVFileLogger:
         """
 
         def assemble_with_prefix(field, names):
-            return ','.join([field + '_' + str(x) for x in names]) + ','
+            return ",".join([field + "_" + str(x) for x in names]) + ","
 
         # Write full name for each field.
         self.file.write(f"{'timestamp':>{self.timestamp_element_width}},")
         for field in self.fields:
-            if (field.endswith('joint_positions') or field.endswith('joint_velocity')
-                    or field.endswith('joint_torque_ratio')):
+            if (
+                field.endswith("joint_positions")
+                or field.endswith("joint_velocity")
+                or field.endswith("joint_torque_ratio")
+            ):
                 # Write field name followed by joint number. For example: "target_joint_positions_1".
                 self.file.write(assemble_with_prefix(field, range(robot_info.num_joints)))
-            elif field.endswith('end_effector_pose'):
-                self.file.write(assemble_with_prefix(field, ['x', 'y', 'z', 'alpha', 'beta', 'gamma']))
-            elif field.endswith('end_effector_velocity'):
+            elif field.endswith("end_effector_pose"):
+                self.file.write(assemble_with_prefix(field, ["x", "y", "z", "alpha", "beta", "gamma"]))
+            elif field.endswith("end_effector_velocity"):
                 self.file.write(
-                    assemble_with_prefix(field, ['x_dot', 'y_dot', 'z_dot', 'omega_x', 'omega_y', 'omega_z']))
-            elif field.endswith('configurations'):
-                self.file.write(assemble_with_prefix(field, ['shoulder', 'elbow', 'wrist']))
-            elif field.endswith('last_joint_turn'):
-                self.file.write(field + ',')
+                    assemble_with_prefix(field, ["x_dot", "y_dot", "z_dot", "omega_x", "omega_y", "omega_z"])
+                )
+            elif field.endswith("configurations"):
+                self.file.write(assemble_with_prefix(field, ["shoulder", "elbow", "wrist"]))
+            elif field.endswith("last_joint_turn"):
+                self.file.write(field + ",")
             else:
-                raise ValueError(f'Missing formatting for field: {field}')
-        self.file.write('\n')
+                raise ValueError(f"Missing formatting for field: {field}")
+        self.file.write("\n")
 
     def write_fields(self, timestamp, robot_state):
         """Write fields to file.
@@ -154,26 +159,24 @@ class CSVFileLogger:
             return
 
         # First write the timestamp
-        self.file.write(f'{timestamp:{self.timestamp_element_width}},')
+        self.file.write(f"{timestamp:{self.timestamp_element_width}},")
 
         for field in self.fields:
             # For each field, write each value with appropriate spacing.
-            self.file.write(','.join([f'{x:{self.element_width}}' for x in getattr(robot_state, field).data]))
-            self.file.write(',')
+            self.file.write(",".join([f"{x:{self.element_width}}" for x in getattr(robot_state, field).data]))
+            self.file.write(",")
 
         # End line with newline.
-        self.file.write('\n')
+        self.file.write("\n")
 
     def end_log(self, ignore_checkpoints=True):
-        """Write all accumulated sent commands and close file.
-
-        """
+        """Write all accumulated sent commands and close file."""
         # Write all sent commands.
-        self.file.write('\nSENT_COMMANDS\n')
+        self.file.write("\nSENT_COMMANDS\n")
         while not self.command_queue.empty():
             command = self.command_queue.get()
 
-            if ignore_checkpoints and command.startswith('SetCheckpoint'):
+            if ignore_checkpoints and command.startswith("SetCheckpoint"):
                 continue
 
             self.file.write(f'"{command}"\n')

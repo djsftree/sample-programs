@@ -197,4 +197,3 @@ stick.getcaps()
 while True:
     print(stick.getinfo())
     sleep(0.5)
-

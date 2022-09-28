@@ -1,5 +1,6 @@
 from pymodbus.client.sync import ModbusTcpClient
 
+
 class MoxaE1212:
     """Class to interface with the MOXA ioLogik E1212 External IO Module.
     https://www.moxa.com/en/products/industrial-edge-connectivity/controllers-and-ios/universal-controllers-and-i-os/iologik-e1200-series/iologik-e1212
@@ -14,12 +15,12 @@ class MoxaE1212:
         The IP address of the device.
 
     """
+
     def __init__(self):
         """Constructor for an instance of the MoxaE1212 class."""
         self.address = None
 
         self.outputStatus = [False, False, False, False, False, False, False, False]
-
 
     def _getoutputstatus(self):
         """Private method to get the actual status of the digital outputs. This is done once in the constructor."""
@@ -97,7 +98,7 @@ class MoxaE1212:
             ret = self.connect()
             if not ret:
                 return None
-        rq = self.modbusConnection.read_discrete_inputs(0,8)
+        rq = self.modbusConnection.read_discrete_inputs(0, 8)
         if rq.isError():
             print("Could not read the value")
             return None

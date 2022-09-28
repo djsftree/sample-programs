@@ -30,66 +30,78 @@ JOY_RETURNRAWDATA = 0x100
 JOY_RETURNPOVCTS = 0x200
 JOY_RETURNCENTERED = 0x400
 JOY_USEDEADZONE = 0x800
-JOY_RETURNALL = JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ | JOY_RETURNR | JOY_RETURNU | JOY_RETURNV | JOY_RETURNPOV | JOY_RETURNBUTTONS
+JOY_RETURNALL = (
+    JOY_RETURNX
+    | JOY_RETURNY
+    | JOY_RETURNZ
+    | JOY_RETURNR
+    | JOY_RETURNU
+    | JOY_RETURNV
+    | JOY_RETURNPOV
+    | JOY_RETURNBUTTONS
+)
 
 # Button mapping
-buttons = ['Button1', 'Button2']
+buttons = ["Button1", "Button2"]
 
 # Structures for WinMM
 class JOYCAPS(ctypes.Structure):
     _fields_ = [
-        ('wMid', WORD),
-        ('wPid', WORD),
-        ('szPname', TCHAR * MAXPNAMELEN),
-        ('wXmin', UINT),
-        ('wXmax', UINT),
-        ('wYmin', UINT),
-        ('wYmax', UINT),
-        ('wZmin', UINT),
-        ('wZmax', UINT),
-        ('wNumButtons', UINT),
-        ('wPeriodMin', UINT),
-        ('wPeriodMax', UINT),
-        ('wRmin', UINT),
-        ('wRmax', UINT),
-        ('wUmin', UINT),
-        ('wUmax', UINT),
-        ('wVmin', UINT),
-        ('wVmax', UINT),
-        ('wCaps', UINT),
-        ('wMaxAxes', UINT),
-        ('wNumAxes', UINT),
-        ('wMaxButtons', UINT),
-        ('szRegKey', TCHAR * MAXPNAMELEN),
-        ('szOEMVxD', TCHAR * MAX_JOYSTICKOEMVXDNAME),
+        ("wMid", WORD),
+        ("wPid", WORD),
+        ("szPname", TCHAR * MAXPNAMELEN),
+        ("wXmin", UINT),
+        ("wXmax", UINT),
+        ("wYmin", UINT),
+        ("wYmax", UINT),
+        ("wZmin", UINT),
+        ("wZmax", UINT),
+        ("wNumButtons", UINT),
+        ("wPeriodMin", UINT),
+        ("wPeriodMax", UINT),
+        ("wRmin", UINT),
+        ("wRmax", UINT),
+        ("wUmin", UINT),
+        ("wUmax", UINT),
+        ("wVmin", UINT),
+        ("wVmax", UINT),
+        ("wCaps", UINT),
+        ("wMaxAxes", UINT),
+        ("wNumAxes", UINT),
+        ("wMaxButtons", UINT),
+        ("szRegKey", TCHAR * MAXPNAMELEN),
+        ("szOEMVxD", TCHAR * MAX_JOYSTICKOEMVXDNAME),
     ]
+
 
 class JOYINFO(ctypes.Structure):
     _fields_ = [
-        ('wXpos', UINT),
-        ('wYpos', UINT),
-        ('wZpos', UINT),
-        ('wButtons', UINT),
+        ("wXpos", UINT),
+        ("wYpos", UINT),
+        ("wZpos", UINT),
+        ("wButtons", UINT),
     ]
+
 
 class JOYINFOEX(ctypes.Structure):
     _fields_ = [
-        ('dwSize', DWORD),
-        ('dwFlags', DWORD),
-        ('dwXpos', DWORD),
-        ('dwYpos', DWORD),
-        ('dwZpos', DWORD),
-        ('dwRpos', DWORD),
-        ('dwUpos', DWORD),
-        ('dwVpos', DWORD),
-        ('dwButtons', DWORD),
-        ('dwButtonNumber', DWORD),
-        ('dwPOV', DWORD),
-        ('dwReserved1', DWORD),
-        ('dwReserved2', DWORD),
+        ("dwSize", DWORD),
+        ("dwFlags", DWORD),
+        ("dwXpos", DWORD),
+        ("dwYpos", DWORD),
+        ("dwZpos", DWORD),
+        ("dwRpos", DWORD),
+        ("dwUpos", DWORD),
+        ("dwVpos", DWORD),
+        ("dwButtons", DWORD),
+        ("dwButtonNumber", DWORD),
+        ("dwPOV", DWORD),
+        ("dwReserved1", DWORD),
+        ("dwReserved2", DWORD),
     ]
 
-class MecaJoy():
+
+class MecaJoy:
     def __init__(self):
         # Define structures
         self._joyid = 0
@@ -125,28 +137,13 @@ class MecaJoy():
 
     def getinfo(self):
         joyGetPosEx(self._joyid, self._pinfoex)
-        data = [round((self._infoex.dwXpos-32767.5)/32767.5, 2), round((self._infoex.dwYpos-32767.5)/32767.5, 2), round((self._infoex.dwZpos-32767.5)/32767.5, 2), None, None]
+        data = [
+            round((self._infoex.dwXpos - 32767.5) / 32767.5, 2),
+            round((self._infoex.dwYpos - 32767.5) / 32767.5, 2),
+            round((self._infoex.dwZpos - 32767.5) / 32767.5, 2),
+            None,
+            None,
+        ]
         for b in range(self._caps.wNumButtons):
-            data[b+3] = 0 != (1 << b) & self._infoex.dwButtons
+            data[b + 3] = 0 != (1 << b) & self._infoex.dwButtons
         return data
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

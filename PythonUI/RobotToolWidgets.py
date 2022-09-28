@@ -1,66 +1,75 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSignal,Qt
-
-import PyQt5Widgets
-from PyQt5Widgets import PushBut, LCDNumber, Label, LCDPanel, jogBut
-from functools import partial
-
-class PoseWidget(QtWidgets.QWidget):
-    def __init__(self,parent = None):
-        super(PoseWidget,self).__init__(parent)
-        self.horizontalLayoutWidget = QtWidgets.QWidget()
-        #self.setFixedWidth(235)
-        #self.setFixedHeight(325)
-        self.gridLayout = QtWidgets.QGridLayout()
-
-        self.lcdNumber_1 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_1, 0, 0, 1, 1)
-
-        self.lcdNumber_2 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_2, 0, 1, 1, 1)
-
-        self.lcdNumber_3 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_3, 0, 2, 1, 1)
-
-        self.lcdNumber_4 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_4, 0, 3, 1, 1)
-
-        self.lcdNumber_5 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_5, 0, 4, 1, 1)
-
-        self.lcdNumber_6 = LCDNumber(self)
-        self.gridLayout.addWidget(self.lcdNumber_6, 0, 5, 1, 1)
-
-        self.label_1 = Label(self)
-        self.gridLayout.addWidget(self.label_1, 1, 0, 1, 1)
-
-        self.label_2 = Label(self)
-        self.gridLayout.addWidget(self.label_2, 1, 1, 1, 1)
-
-        self.label_3 = Label(self)
-        self.gridLayout.addWidget(self.label_3, 1, 2, 1, 1)
-
-        self.label_4 = Label(self)
-        self.gridLayout.addWidget(self.label_4, 1, 3, 1, 1)
-
-        self.label_5 = Label(self)
-        self.gridLayout.addWidget(self.label_5, 1, 4, 1, 1)
-
-        self.label_6 = Label(self)
-        self.gridLayout.addWidget(self.label_6, 1, 5, 1, 1)
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QFontMetricsF
+from PyQt5.QtWidgets import (
+    QWidget,
+    QGridLayout,
+    QHBoxLayout,
+    QPushButton,
+    QLabel,
+    QRadioButton,
+    QPlainTextEdit,
+    QVBoxLayout,
+    QSlider,
+    QLineEdit,
+    QFrame,
+)
+from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
+from vtkmodules.vtkRenderingCore import vtkRenderer, vtkAssembly, vtkCamera
+from PyQt5Widgets import PushBut, LCDNumber, Label, JogBut, OutputButton
+from vtkmeca500 import load_STL, create_coordinates, create_ground
 
 
+class PoseWidget(QWidget):
+    def __init__(self, parent=None):
+        super(PoseWidget, self).__init__(parent)
 
+        self.gridLayout = QGridLayout()
         self.setLayout(self.gridLayout)
 
-    def update(self,info):
+        self.lcdNumber_1 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_1, 0, 0)
+
+        self.lcdNumber_2 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_2, 0, 1)
+
+        self.lcdNumber_3 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_3, 0, 2)
+
+        self.lcdNumber_4 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_4, 0, 3)
+
+        self.lcdNumber_5 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_5, 0, 4)
+
+        self.lcdNumber_6 = LCDNumber()
+        self.gridLayout.addWidget(self.lcdNumber_6, 0, 5)
+
+        self.label_1 = Label("J1")
+        self.gridLayout.addWidget(self.label_1, 1, 0)
+
+        self.label_2 = Label("J2")
+        self.gridLayout.addWidget(self.label_2, 1, 1)
+
+        self.label_3 = Label("J3")
+        self.gridLayout.addWidget(self.label_3, 1, 2)
+
+        self.label_4 = Label("J4")
+        self.gridLayout.addWidget(self.label_4, 1, 3)
+
+        self.label_5 = Label("J5")
+        self.gridLayout.addWidget(self.label_5, 1, 4)
+
+        self.label_6 = Label("J6")
+        self.gridLayout.addWidget(self.label_6, 1, 5)
+
+    def update_lcd(self, info):
         self.lcdNumber_1.display(info[0])
         self.lcdNumber_2.display(info[1])
         self.lcdNumber_3.display(info[2])
         self.lcdNumber_4.display(info[3])
         self.lcdNumber_5.display(info[4])
         self.lcdNumber_6.display(info[5])
-            
 
     def reset(self):
         self.lcdNumber_1.display(0)
@@ -75,103 +84,102 @@ class PoseWidget(QtWidgets.QWidget):
         self.lcdNumber_5.default()
         self.lcdNumber_6.display(0)
         self.lcdNumber_6.default()
-            
-    def set_label(self, info):
-        self.label_1.setText(info[0])
-        self.label_2.setText(info[1])
-        self.label_3.setText(info[2])
-        self.label_4.setText(info[3])
-        self.label_5.setText(info[4])
-        self.label_6.setText(info[5])
 
-    
-class JogPanel(QtWidgets.QWidget):
+
+class JogPanel(QWidget):
     mode = pyqtSignal(str)
     vel = pyqtSignal(int)
     delta = pyqtSignal(list)
-    def __init__(self,parent = None):
-        super (JogPanel,self).__init__(parent)
-        self.hboxLayout = QtWidgets.QHBoxLayout()
-        self.vboxLayout = QtWidgets.QVBoxLayout()
-        self.gridLayout = QtWidgets.QGridLayout()
-        
-        self.jog = QtWidgets.QPushButton()
-        self.jog.setMaximumHeight(50)
-        self.jog.setText("Jogging Mode")
-        self.jog.setCheckable(True)
 
-        self.joymode = QtWidgets.QPushButton()
-        self.joymode.setMaximumHeight(25)
-        self.joymode.setText("Use Joystick")
-        self.joymode.setCheckable(True)
-        self.joymode.setEnabled(False)
+    def __init__(self, parent=None):
+        super(JogPanel, self).__init__(parent)
 
-        self.jointsMode = QtWidgets.QRadioButton("Joints")
-        self.WRFMode = QtWidgets.QRadioButton("WRF")
-        self.TRFMode = QtWidgets.QRadioButton("TRF")
-        self.jointsMode.setEnabled(False)
-        self.WRFMode.setEnabled(False)
-        self.TRFMode.setEnabled(False)
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
 
-        self.hboxLayout.addWidget(self.jointsMode)
-        self.hboxLayout.addWidget(self.WRFMode)
-        self.hboxLayout.addWidget(self.TRFMode)
+        self.jogging_mode_button = QPushButton("Jogging Mode")
+        self.jogging_mode_button.setMaximumHeight(50)
+        self.jogging_mode_button.clicked.connect(self.enable_jog)
+        self.main_layout.addWidget(self.jogging_mode_button)
 
-        self.label_1 = QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_1,0,0,1,1)
-        self.btn1 = jogBut()
-        self.btn1.setText("-")
-        self.gridLayout.addWidget(self.btn1,0,1,1,1)
-        self.btn2 = jogBut()
-        self.btn2.setText("+")
-        self.gridLayout.addWidget(self.btn2,0,2,1,1)
-        
-        self.label_2= QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_2,1,0,1,1)
-        self.btn3 = jogBut()
-        self.btn3.setText("-")
-        self.gridLayout.addWidget(self.btn3,1,1,1,1)
-        self.btn4 = jogBut()
-        self.btn4.setText("+")
-        self.gridLayout.addWidget(self.btn4,1,2,1,1)
-        
-        
-        self.label_3= QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_3,2,0,1,1)
-        self.btn5 = jogBut()
-        self.btn5.setText("-")
-        self.gridLayout.addWidget(self.btn5,2,1,1,1)
-        self.btn6 = jogBut()
-        self.btn6.setText("+")
-        self.gridLayout.addWidget(self.btn6,2,2,1,1)
+        self.joymode_button = QPushButton("Use Joystick")
+        self.joymode_button.setMaximumHeight(25)
+        self.joymode_button.setEnabled(False)
+        self.joymode_button.clicked.connect(self.on_joy_mode)
+        self.main_layout.addWidget(self.joymode_button)
 
-        self.label_4= QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_4,3,0,1,1)
-        self.btn7 = jogBut()
-        self.btn7.setText("-")
-        self.gridLayout.addWidget(self.btn7,3,1,1,1)
-        self.btn8 = jogBut()
-        self.btn8.setText("+")
-        self.gridLayout.addWidget(self.btn8,3,2,1,1)
-        
-        self.label_5= QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_5,4,0,1,1)
-        self.btn9 = jogBut()
-        self.btn9.setText("-")
-        self.gridLayout.addWidget(self.btn9,4,1,1,1)
-        self.btn10 = jogBut()
-        self.btn10.setText("+")
-        self.gridLayout.addWidget(self.btn10,4,2,1,1)
-        
+        self.radio_buttons_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.radio_buttons_layout)
 
-        self.label_6= QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.label_6,5,0,1,1)
-        self.btn11 = jogBut()
-        self.btn11.setText("-")
-        self.gridLayout.addWidget(self.btn11,5,1,1,1)
-        self.btn12 = jogBut()
-        self.btn12.setText("+")
-        self.gridLayout.addWidget(self.btn12,5,2,1,1)
+        self.joints_mode = QRadioButton("Joints")
+        self.radio_buttons_layout.addWidget(self.joints_mode)
+        self.joints_mode.toggled.connect(self.on_joints)
+
+        self.wrf_mode = QRadioButton("WRF")
+        self.radio_buttons_layout.addWidget(self.wrf_mode)
+        self.wrf_mode.toggled.connect(self.on_WRF)
+
+        self.trf_mode = QRadioButton("TRF")
+        self.radio_buttons_layout.addWidget(self.trf_mode)
+        self.trf_mode.toggled.connect(self.on_TRF)
+
+        self.grid_layout = QGridLayout()
+        self.main_layout.addLayout(self.grid_layout)
+
+        self.label_1 = QLabel()
+        self.grid_layout.addWidget(self.label_1, 0, 0)
+
+        self.btn1 = JogBut("-")
+        self.grid_layout.addWidget(self.btn1, 0, 1)
+
+        self.btn2 = JogBut("+")
+        self.grid_layout.addWidget(self.btn2, 0, 2)
+
+        self.label_2 = QLabel()
+        self.grid_layout.addWidget(self.label_2, 1, 0)
+
+        self.btn3 = JogBut("-")
+        self.grid_layout.addWidget(self.btn3, 1, 1)
+
+        self.btn4 = JogBut("+")
+        self.grid_layout.addWidget(self.btn4, 1, 2)
+
+        self.label_3 = QLabel()
+        self.grid_layout.addWidget(self.label_3, 2, 0)
+
+        self.btn5 = JogBut("-")
+        self.grid_layout.addWidget(self.btn5, 2, 1)
+
+        self.btn6 = JogBut("+")
+        self.grid_layout.addWidget(self.btn6, 2, 2)
+
+        self.label_4 = QLabel()
+        self.grid_layout.addWidget(self.label_4, 3, 0)
+
+        self.btn7 = JogBut("-")
+        self.grid_layout.addWidget(self.btn7, 3, 1)
+
+        self.btn8 = JogBut("+")
+        self.grid_layout.addWidget(self.btn8, 3, 2)
+
+        self.label_5 = QLabel()
+        self.grid_layout.addWidget(self.label_5, 4, 0)
+
+        self.btn9 = JogBut("-")
+        self.grid_layout.addWidget(self.btn9, 4, 1)
+
+        self.btn10 = JogBut("+")
+        self.grid_layout.addWidget(self.btn10, 4, 2)
+
+        self.label_6 = QLabel()
+        self.grid_layout.addWidget(self.label_6, 5, 0)
+
+        self.btn11 = JogBut("-")
+        self.grid_layout.addWidget(self.btn11, 5, 1)
+
+        self.btn12 = JogBut("+")
+        self.grid_layout.addWidget(self.btn12, 5, 2)
+
         self.btn1.setEnabled(False)
         self.btn2.setEnabled(False)
         self.btn3.setEnabled(False)
@@ -185,61 +193,47 @@ class JogPanel(QtWidgets.QWidget):
         self.btn11.setEnabled(False)
         self.btn12.setEnabled(False)
 
-        self.speed_set_label = QtWidgets.QLabel("Speed Settings")
-        self.speed_set_label.setMaximumHeight(50)
+        self.speed_set_label = QLabel("Speed Settings")
+        self.main_layout.addWidget(self.speed_set_label)
 
-        self.slider_layout = QtWidgets.QHBoxLayout()
-        
-        self.speed = QtWidgets.QSlider(Qt.Horizontal)
+        self.slider_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.slider_layout)
+
+        self.speed = QSlider(Qt.Horizontal)
         self.speed.setRange(0, 20)
         self.speed.setFocusPolicy(Qt.NoFocus)
         self.speed.setPageStep(5)
         self.speed.setValue(0)
-        self.val = QtWidgets.QLabel('0')
-        self.val.setMaximumHeight(50)
-        self.val.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
-
-        self.slider_layout.addWidget(self.speed)
-        self.slider_layout.addWidget(self.val)
-
-        self.vboxLayout.addWidget(self.jog)
-        self.vboxLayout.addWidget(self.joymode)
-        self.vboxLayout.addLayout(self.hboxLayout)
-        self.vboxLayout.addLayout(self.gridLayout)
-        self.vboxLayout.addWidget(self.speed_set_label)
-        self.vboxLayout.addLayout(self.slider_layout)
-        
-        self.setLayout(self.vboxLayout)
-
-        self.jointsMode.toggled.connect(self.on_joints)
-        self.WRFMode.toggled.connect(self.on_WRF)
-        self.TRFMode.toggled.connect(self.on_TRF)
-        self.jog.clicked.connect(self.enable_jog)
         self.speed.valueChanged.connect(self.updateVal)
+        self.slider_layout.addWidget(self.speed)
 
-        #Button connection
-        self.btn1.clicked.connect(lambda ignore, label=0, direction='-': self.on_button_delta(label, direction))
-        self.btn2.clicked.connect(lambda ignore, label=0, direction='+': self.on_button_delta(label, direction))
-        self.btn3.clicked.connect(lambda ignore, label=1, direction='-': self.on_button_delta(label, direction))
-        self.btn4.clicked.connect(lambda ignore, label=1, direction='+': self.on_button_delta(label, direction))
-        self.btn5.clicked.connect(lambda ignore, label=2, direction='-': self.on_button_delta(label, direction))
-        self.btn6.clicked.connect(lambda ignore, label=2, direction='+': self.on_button_delta(label, direction))
-        self.btn7.clicked.connect(lambda ignore, label=3, direction='-': self.on_button_delta(label, direction))
-        self.btn8.clicked.connect(lambda ignore, label=3, direction='+': self.on_button_delta(label, direction))
-        self.btn9.clicked.connect(lambda ignore, label=4, direction='-': self.on_button_delta(label, direction))
-        self.btn10.clicked.connect(lambda ignore, label=4, direction='+': self.on_button_delta(label, direction))
-        self.btn11.clicked.connect(lambda ignore, label=5, direction='-': self.on_button_delta(label, direction))
-        self.btn12.clicked.connect(lambda ignore, label=5, direction='+': self.on_button_delta(label, direction))
+        self.value_label = QLabel("0")
+        self.value_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self.slider_layout.addWidget(self.value_label)
 
-        self.joymode.clicked.connect(self.on_joy_mode)
-        
+        # Button connection
+        self.btn1.clicked.connect(lambda ignore, label=0, direction="-": self.on_button_delta(label, direction))
+        self.btn2.clicked.connect(lambda ignore, label=0, direction="+": self.on_button_delta(label, direction))
+        self.btn3.clicked.connect(lambda ignore, label=1, direction="-": self.on_button_delta(label, direction))
+        self.btn4.clicked.connect(lambda ignore, label=1, direction="+": self.on_button_delta(label, direction))
+        self.btn5.clicked.connect(lambda ignore, label=2, direction="-": self.on_button_delta(label, direction))
+        self.btn6.clicked.connect(lambda ignore, label=2, direction="+": self.on_button_delta(label, direction))
+        self.btn7.clicked.connect(lambda ignore, label=3, direction="-": self.on_button_delta(label, direction))
+        self.btn8.clicked.connect(lambda ignore, label=3, direction="+": self.on_button_delta(label, direction))
+        self.btn9.clicked.connect(lambda ignore, label=4, direction="-": self.on_button_delta(label, direction))
+        self.btn10.clicked.connect(lambda ignore, label=4, direction="+": self.on_button_delta(label, direction))
+        self.btn11.clicked.connect(lambda ignore, label=5, direction="-": self.on_button_delta(label, direction))
+        self.btn12.clicked.connect(lambda ignore, label=5, direction="+": self.on_button_delta(label, direction))
+
+        self.main_layout.addStretch()
+
     def enable_jog(self):
-        if self.jog.isChecked():
-                
-            self.jointsMode.setEnabled(True)
-            self.WRFMode.setEnabled(True)
-            self.TRFMode.setEnabled(True)
-            self.joymode.setEnabled(True)
+        if self.jogging_mode_button.isChecked():
+
+            self.joints_mode.setEnabled(True)
+            self.wrf_mode.setEnabled(True)
+            self.trf_mode.setEnabled(True)
+            self.joymode_button.setEnabled(True)
 
             self.btn1.setEnabled(True)
             self.btn2.setEnabled(True)
@@ -253,13 +247,11 @@ class JogPanel(QtWidgets.QWidget):
             self.btn10.setEnabled(True)
             self.btn11.setEnabled(True)
             self.btn12.setEnabled(True)
-
         else:
-    
-            self.jointsMode.setEnabled(False)
-            self.WRFMode.setEnabled(False)
-            self.TRFMode.setEnabled(False)
-            self.joymode.setEnabled(False)
+            self.joints_mode.setEnabled(False)
+            self.wrf_mode.setEnabled(False)
+            self.trf_mode.setEnabled(False)
+            self.joymode_button.setEnabled(False)
 
             self.btn1.setEnabled(False)
             self.btn2.setEnabled(False)
@@ -275,7 +267,7 @@ class JogPanel(QtWidgets.QWidget):
             self.btn12.setEnabled(False)
 
     def on_joy_mode(self):
-        if self.joymode.isChecked():
+        if self.joymode_button.isChecked():
             self.btn1.setEnabled(False)
             self.btn2.setEnabled(False)
             self.btn3.setEnabled(False)
@@ -301,18 +293,20 @@ class JogPanel(QtWidgets.QWidget):
             self.btn10.setEnabled(True)
             self.btn11.setEnabled(True)
             self.btn12.setEnabled(True)
-            
+
     def on_joints(self):
         self.mode.emit("Joints")
         self.updateLabel("Joints")
+
     def on_WRF(self):
         self.mode.emit("WRF")
         self.updateLabel("WRF")
+
     def on_TRF(self):
         self.mode.emit("TRF")
         self.updateLabel("TRF")
-        
-    def updateLabel(self,value):
+
+    def updateLabel(self, value):
         if value == "Joints":
             self.label_1.setText("J1")
             self.label_2.setText("J2")
@@ -320,9 +314,8 @@ class JogPanel(QtWidgets.QWidget):
             self.label_4.setText("J4")
             self.label_5.setText("J5")
             self.label_6.setText("J6")
-            
-            
-        elif (value == "WRF") or (value == "TRF"):
+
+        elif value in ("WRF", "TRF"):
             self.label_1.setText("X")
             self.label_2.setText("Y")
             self.label_3.setText("Z")
@@ -331,136 +324,246 @@ class JogPanel(QtWidgets.QWidget):
             self.label_6.setText("Rz")
 
     def updateVal(self, value):
-        self.val.setText(str(value))
+        self.value_label.setText(str(value))
         self.vel.emit(value)
 
     def on_button_delta(self, label, direction):
         data = [0, 0, 0, 0, 0, 0]
-        if direction == '+':
+        if direction == "+":
             data[label] = 1
         else:
             data[label] = -1
         self.delta.emit(data)
 
 
-class TeachPanel(QtWidgets.QWidget):
-    def __init__(self,parent = None):
-        super (TeachPanel,self).__init__(parent)
-        #self.setWindowTitle("QThread Application")
-        #self.setWindowIcon(QtGui.QIcon("Path/to/image/file.png"))
-        #self.setMinimumWidth(resolution.width() / 3)
-        #self.setMinimumHeight(resolution.height() / 1.5)
-        #self.setStyleSheet("QScrollBar:horizontal {width: 1px; height: 1px;}, QScrollBar:vertical {width: 1px;height: 1px;}")
-        self.linef = QtWidgets.QLineEdit(self)
-        self.linef.setPlaceholderText("Command to send...")
-        self.linef.setStyleSheet("margin: 1px; padding: 7px;border-style: solid;border-radius: 3px;border-width: 0.5px;")
-        self.but1 = PushBut(self)
-        self.but1.setText("Send")
-        #self.but1.setFixedWidth(72)
-        #self.but1.setFont(font_but)
-                                 
-        self.textf = QtWidgets.QPlainTextEdit(self)
-        self.textf.setPlaceholderText("Programm...")
-        self.textf.setTabStopDistance(QtGui.QFontMetricsF(self.textf.font()).horizontalAdvance(' ') * 4)
-        #self.textfsetStyleSheet("margin: 1px; padding: 7px;border-style: solid;border-radius: 3px;border-width: 0.5px;")
-                                 
-        self.but2 = PushBut(self)
-        self.but2.setText("MoveJoints")
-        #self.but2.setFixedWidth(72)
-        #self.but2.setFont(font_but)
-        self.but3 = PushBut(self)
-        self.but3.setText("MovePose")
-        #self.but3.setFixedWidth(72)
-        #self.but3.setFont(font_but)
-        self.but4 = PushBut(self)
-        self.but4.setText("MoveLin")
-        #self.but4.setFixedWidth(72)
-        #self.but4.setFont(font_but)
+class MyInteractor(vtkInteractorStyleTrackballCamera):
+    def __init__(self):
+        vtkInteractorStyleTrackballCamera.__init__(self)
 
-        self.grid2 = QtWidgets.QGridLayout()
-        self.grid2.addWidget(self.but2, 0, 0, 1, 1)
-        self.grid2.addWidget(self.but3, 0, 2, 1, 1)
-        self.grid2.addWidget(self.but4, 0, 3, 1, 1)
-        self.grid1 = QtWidgets.QGridLayout()
-        self.grid1.addWidget(self.linef, 0, 0, 1, 1)
-        self.grid1.addWidget(self.but1, 1, 0, 1, 1)
-        self.grid1.addWidget(self.textf, 2, 0, 13, 1)
-        self.grid1.addLayout(self.grid2, 16, 0, 1, 1)
-        self.grid1.setContentsMargins(7, 7, 7, 7)
-        self.setLayout(self.grid1)
+        self.AddObserver("CharEvent", self.OnCharEvent)
+        self.AddObserver("KeyPressEvent", self.OnKeyPressEvent)
 
-class MoxaVisual(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super(MoxaVisual, self).__init__(parent)
-        self.wid = QtWidgets.QHBoxLayout()
-        self.Inputs = QtWidgets.QVBoxLayout()
-        self.Outputs = QtWidgets.QVBoxLayout()
-        self.OutLabels = QtWidgets.QVBoxLayout()
+    def OnCharEvent(self, obj, event):
+        pass
 
-        self.wid.addLayout(self.Inputs)
-        self.wid.addLayout(self.OutLabels)
-        self.wid.addLayout(self.Outputs)
+    def OnKeyPressEvent(self, obj, event):
+        return
 
-        self.in_0 = QtWidgets.QLabel()
-        self.in_1 = QtWidgets.QLabel()
-        self.in_2 = QtWidgets.QLabel()
-        self.in_3 = QtWidgets.QLabel()
-        self.in_4 = QtWidgets.QLabel()
-        self.in_5 = QtWidgets.QLabel()
-        self.in_6 = QtWidgets.QLabel()
-        self.in_7 = QtWidgets.QLabel()
 
-        self.outL_0 = QtWidgets.QLabel()
-        self.outL_1 = QtWidgets.QLabel()
-        self.outL_2 = QtWidgets.QLabel()
-        self.outL_3 = QtWidgets.QLabel()
-        self.outL_4 = QtWidgets.QLabel()
-        self.outL_5 = QtWidgets.QLabel()
-        self.outL_6 = QtWidgets.QLabel()
-        self.outL_7 = QtWidgets.QLabel()
+class Slider(QSlider):
+    def __init__(self):
+        QSlider.__init__(self)
 
-        self.outL_0.setText("Output 0")
-        self.outL_1.setText("Output 1")
-        self.outL_2.setText("Output 2")
-        self.outL_3.setText("Output 3")
-        self.outL_4.setText("Output 4")
-        self.outL_5.setText("Output 5")
-        self.outL_6.setText("Output 6")
-        self.outL_7.setText("Output 7")
+        self.setMinimum(-175)
+        self.setMaximum(175)
+        self.setValue(0)
+        self.setOrientation(Qt.Horizontal)
 
-        self.out_0 = PyQt5Widgets.OutputButton()
-        self.out_0.setCheckable(True)
-        self.out_1 = PyQt5Widgets.OutputButton()
-        self.out_1.setCheckable(True)
-        self.out_2 = PyQt5Widgets.OutputButton()
-        self.out_2.setCheckable(True)
-        self.out_3 = PyQt5Widgets.OutputButton()
-        self.out_3.setCheckable(True)
-        self.out_4 = PyQt5Widgets.OutputButton()
-        self.out_4.setCheckable(True)
-        self.out_5 = PyQt5Widgets.OutputButton()
-        self.out_5.setCheckable(True)
-        self.out_6 = PyQt5Widgets.OutputButton()
-        self.out_6.setCheckable(True)
-        self.out_7 = PyQt5Widgets.OutputButton()
-        self.out_7.setCheckable(True)
 
-        self.in_0.setText("Input 0")
+class TeachPanel(QWidget):
+    def __init__(self):
+        super(TeachPanel, self).__init__()
+
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        self.command_lineedit = QLineEdit()
+        self.command_lineedit.setPlaceholderText("Command to send...")
+        self.command_lineedit.setStyleSheet(
+            "margin: 1px; padding: 7px;border-style: solid;border-radius: 3px;border-width: 0.5px;"
+        )
+        self.main_layout.addWidget(self.command_lineedit)
+
+        self.send_button = PushBut()
+        self.send_button.setText("Send")
+        self.main_layout.addWidget(self.send_button)
+
+        self.program = QPlainTextEdit()
+        self.program.setPlaceholderText("Programm...")
+        self.program.setTabStopDistance(QFontMetricsF(self.program.font()).horizontalAdvance(" ") * 4)
+        self.main_layout.addWidget(self.program)
+
+        self.buttons_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.buttons_layout)
+
+        self.move_joints_button = PushBut("MoveJoints")
+        self.buttons_layout.addWidget(self.move_joints_button)
+
+        self.move_pose_button = PushBut("MovePose")
+        self.buttons_layout.addWidget(self.move_pose_button)
+
+        self.move_lin_button = PushBut("MoveLin")
+        self.buttons_layout.addWidget(self.move_lin_button)
+
+        self.frame = QFrame()
+        self.vtk_widget = QVTKRenderWindowInteractor(self.frame)
+        self.main_layout.addWidget(self.vtk_widget)
+
+        self.slider_1 = Slider()
+        self.slider_1.valueChanged.connect(lambda: self.set_orientation(1, self.slider_1.value()))
+        self.main_layout.addWidget(self.slider_1)
+
+        self.slider_2 = Slider()
+        self.slider_2.valueChanged.connect(lambda: self.set_orientation(2, self.slider_2.value()))
+        self.main_layout.addWidget(self.slider_2)
+
+        self.slider_3 = Slider()
+        self.slider_3.valueChanged.connect(lambda: self.set_orientation(3, self.slider_3.value()))
+        self.main_layout.addWidget(self.slider_3)
+
+        self.slider_4 = Slider()
+        self.slider_4.valueChanged.connect(lambda: self.set_orientation(4, self.slider_4.value()))
+        self.main_layout.addWidget(self.slider_4)
+
+        self.slider_5 = Slider()
+        self.slider_5.valueChanged.connect(lambda: self.set_orientation(5, self.slider_5.value()))
+        self.main_layout.addWidget(self.slider_5)
+
+        self.slider_6 = Slider()
+        self.slider_6.valueChanged.connect(lambda: self.set_orientation(6, self.slider_6.value()))
+        self.main_layout.addWidget(self.slider_6)
+
+        self.main_layout.addStretch()
+
+        self.renderer = vtkRenderer()
+        self.vtk_widget.GetRenderWindow().AddRenderer(self.renderer)
+        self.interactor = self.vtk_widget.GetRenderWindow().GetInteractor()
+
+        self.style = MyInteractor()
+        self.style.SetDefaultRenderer(self.renderer)
+        self.interactor.SetInteractorStyle(self.style)
+
+        filenames = [
+            "meca500_base.stl",
+            "link1.stl",
+            "link2.stl",
+            "link3.stl",
+            "link4.stl",
+            "link5.stl",
+            "link6.stl",
+            "spindle_assy.stl",
+        ]
+        filenames = [f"stl/{filename}" for filename in filenames]
+
+        self.actor = []
+        self.meca500_assy = []
+        for actor_id, file in enumerate(filenames):
+            self.actor.append(load_STL(file))
+            self.actor[actor_id].GetProperty().SetDiffuseColor(0.9, 0.9, 0.9)
+            self.actor[actor_id].GetProperty().SetDiffuse(0.8)
+            self.actor[actor_id].GetProperty().SetSpecular(0.5)
+            self.actor[actor_id].GetProperty().SetSpecularColor(1.0, 1.0, 1.0)
+            self.actor[actor_id].GetProperty().SetSpecularPower(30.0)
+
+            tmp_assembly = vtkAssembly()
+            tmp_assembly.SetObjectName(f"Assembly_{file}")
+            self.meca500_assy.append(tmp_assembly)
+            self.meca500_assy[actor_id].AddPart(self.actor[actor_id])
+
+            if actor_id > 0:
+                self.meca500_assy[actor_id - 1].AddPart(tmp_assembly)
+
+        self.meca500_assy[0].SetOrigin(0, 0, 0)
+        self.meca500_assy[1].SetOrigin(0, 0, 135)
+        self.meca500_assy[2].SetOrigin(0, 0, 135)
+        self.meca500_assy[3].SetOrigin(135, 0, 135)
+        self.meca500_assy[4].SetOrigin(173, 0, 50)
+        self.meca500_assy[5].SetOrigin(173, 0, 15)
+        self.meca500_assy[6].SetOrigin(173, 0, -55)
+
+        self.meca500_assy[0].SetPosition(0, 0, 0)
+        self.meca500_assy[1].SetPosition(0, 0, 0)
+        self.meca500_assy[2].SetPosition(0, 0, 0)
+        self.meca500_assy[3].SetPosition(0, 0, 0)
+        self.meca500_assy[4].SetPosition(0, 0, 0)
+        self.meca500_assy[5].SetPosition(0, 0, 0)
+        self.meca500_assy[6].SetPosition(0, 0, 0)
+
+        self.renderer.AddActor(self.meca500_assy[0])
+
+        # Add coordinates
+        axes = create_coordinates()
+        self.renderer.AddActor(axes)
+
+        # Add ground
+        ground = create_ground()
+        self.renderer.AddActor(ground)
+
+        self.renderer.SetBackground(0.2, 0.2, 0.2)
+
+        self.camera = vtkCamera()
+        self.camera.SetFocalPoint(150, 0, 0)
+        self.camera.SetPosition(400, 100, 400)
+        self.camera.ComputeViewPlaneNormal()
+        self.camera.SetViewUp(0, 0, 1)
+        self.camera.Zoom(0.3)
+        self.renderer.SetActiveCamera(self.camera)
+
+        self.interactor.Initialize()
+
+    def set_orientation(self, meca_index: int, position: int):
+        if meca_index in (1, 4):
+            self.meca500_assy[meca_index].SetOrientation(0, 0, position)
+        elif meca_index in (2, 3):
+            self.meca500_assy[meca_index].SetOrientation(0, position, 0)
+        elif meca_index == 5:
+            self.meca500_assy[meca_index].SetOrientation(0, -position, 0)
+        elif meca_index == 6:
+            self.meca500_assy[meca_index].SetOrientation(0, 0, -position)
+        else:
+            raise Exception("Unknown index")
+        # Update the view
+        self.interactor.Render()
+
+
+class MoxaVisual(QWidget):
+    def __init__(self):
+        super(MoxaVisual, self).__init__()
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
+
+        self.Inputs = QVBoxLayout()
+        self.Outputs = QVBoxLayout()
+        self.OutLabels = QVBoxLayout()
+
+        self.main_layout.addLayout(self.Inputs)
+        self.main_layout.addLayout(self.OutLabels)
+        self.main_layout.addLayout(self.Outputs)
+
+        self.in_0 = QLabel("Input 0")
+        self.in_1 = QLabel("Input 1")
+        self.in_2 = QLabel("Input 2")
+        self.in_3 = QLabel("Input 3")
+        self.in_4 = QLabel("Input 4")
+        self.in_5 = QLabel("Input 5")
+        self.in_6 = QLabel("Input 6")
+        self.in_7 = QLabel("Input 7")
         self.in_0.setStyleSheet("border: 1px solid black;")
-        self.in_1.setText("Input 1")
         self.in_1.setStyleSheet("border: 1px solid black;")
-        self.in_2.setText("Input 2")
         self.in_2.setStyleSheet("border: 1px solid black;")
-        self.in_3.setText("Input 3")
         self.in_3.setStyleSheet("border: 1px solid black;")
-        self.in_4.setText("Input 4")
         self.in_4.setStyleSheet("border: 1px solid black;")
-        self.in_5.setText("Input 5")
         self.in_5.setStyleSheet("border: 1px solid black;")
-        self.in_6.setText("Input 6")
         self.in_6.setStyleSheet("border: 1px solid black;")
-        self.in_7.setText("Input 7")
         self.in_7.setStyleSheet("border: 1px solid black;")
+
+        self.outL_0 = QLabel("Output 0")
+        self.outL_1 = QLabel("Output 1")
+        self.outL_2 = QLabel("Output 2")
+        self.outL_3 = QLabel("Output 3")
+        self.outL_4 = QLabel("Output 4")
+        self.outL_5 = QLabel("Output 5")
+        self.outL_6 = QLabel("Output 6")
+        self.outL_7 = QLabel("Output 7")
+
+        self.out_0 = OutputButton()
+        self.out_1 = OutputButton()
+        self.out_2 = OutputButton()
+        self.out_3 = OutputButton()
+        self.out_4 = OutputButton()
+        self.out_5 = OutputButton()
+        self.out_6 = OutputButton()
+        self.out_7 = OutputButton()
 
         self.Inputs.addWidget(self.in_0)
         self.Inputs.addWidget(self.in_1)
@@ -488,8 +591,6 @@ class MoxaVisual(QtWidgets.QWidget):
         self.Outputs.addWidget(self.out_5)
         self.Outputs.addWidget(self.out_6)
         self.Outputs.addWidget(self.out_7)
-
-        self.setLayout(self.wid)
 
     def update_input(self, values):
         color_high = "background-color:rgb(0,255,0)"
