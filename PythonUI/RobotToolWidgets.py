@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QFontMetricsF
 from PyQt5.QtWidgets import (
@@ -21,69 +23,69 @@ from vtkmeca500 import load_STL, create_coordinates, create_ground
 
 
 class PoseWidget(QWidget):
-    def __init__(self, parent=None):
-        super(PoseWidget, self).__init__(parent)
+    def __init__(self, names: list[str]):
+        super(PoseWidget, self).__init__()
 
         self.gridLayout = QGridLayout()
         self.setLayout(self.gridLayout)
 
-        self.lcdNumber_1 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_1, 0, 0)
+        self.lcd_1 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_1, 0, 0)
 
-        self.lcdNumber_2 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_2, 0, 1)
+        self.lcd_2 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_2, 0, 1)
 
-        self.lcdNumber_3 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_3, 0, 2)
+        self.lcd_3 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_3, 0, 2)
 
-        self.lcdNumber_4 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_4, 0, 3)
+        self.lcd_4 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_4, 0, 3)
 
-        self.lcdNumber_5 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_5, 0, 4)
+        self.lcd_5 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_5, 0, 4)
 
-        self.lcdNumber_6 = LCDNumber()
-        self.gridLayout.addWidget(self.lcdNumber_6, 0, 5)
+        self.lcd_6 = LCDNumber()
+        self.gridLayout.addWidget(self.lcd_6, 0, 5)
 
-        self.label_1 = Label("J1")
+        self.label_1 = Label(names[0])
         self.gridLayout.addWidget(self.label_1, 1, 0)
 
-        self.label_2 = Label("J2")
+        self.label_2 = Label(names[1])
         self.gridLayout.addWidget(self.label_2, 1, 1)
 
-        self.label_3 = Label("J3")
+        self.label_3 = Label(names[2])
         self.gridLayout.addWidget(self.label_3, 1, 2)
 
-        self.label_4 = Label("J4")
+        self.label_4 = Label(names[3])
         self.gridLayout.addWidget(self.label_4, 1, 3)
 
-        self.label_5 = Label("J5")
+        self.label_5 = Label(names[4])
         self.gridLayout.addWidget(self.label_5, 1, 4)
 
-        self.label_6 = Label("J6")
+        self.label_6 = Label(names[5])
         self.gridLayout.addWidget(self.label_6, 1, 5)
 
     def update_lcd(self, info):
-        self.lcdNumber_1.display(info[0])
-        self.lcdNumber_2.display(info[1])
-        self.lcdNumber_3.display(info[2])
-        self.lcdNumber_4.display(info[3])
-        self.lcdNumber_5.display(info[4])
-        self.lcdNumber_6.display(info[5])
+        self.lcd_1.display(info[0])
+        self.lcd_2.display(info[1])
+        self.lcd_3.display(info[2])
+        self.lcd_4.display(info[3])
+        self.lcd_5.display(info[4])
+        self.lcd_6.display(info[5])
 
     def reset(self):
-        self.lcdNumber_1.display(0)
-        self.lcdNumber_1.default()
-        self.lcdNumber_2.display(0)
-        self.lcdNumber_2.default()
-        self.lcdNumber_3.display(0)
-        self.lcdNumber_3.default()
-        self.lcdNumber_4.display(0)
-        self.lcdNumber_4.default()
-        self.lcdNumber_5.display(0)
-        self.lcdNumber_5.default()
-        self.lcdNumber_6.display(0)
-        self.lcdNumber_6.default()
+        self.lcd_1.display(0)
+        self.lcd_1.default()
+        self.lcd_2.display(0)
+        self.lcd_2.default()
+        self.lcd_3.display(0)
+        self.lcd_3.default()
+        self.lcd_4.display(0)
+        self.lcd_4.default()
+        self.lcd_5.display(0)
+        self.lcd_5.default()
+        self.lcd_6.display(0)
+        self.lcd_6.default()
 
 
 class JogPanel(QWidget):
@@ -361,8 +363,10 @@ class Slider(QSlider):
 
 
 class TeachPanel(QWidget):
-    def __init__(self):
+    def __init__(self, window):
         super(TeachPanel, self).__init__()
+
+        self.window = window
 
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -399,30 +403,6 @@ class TeachPanel(QWidget):
         self.vtk_widget = QVTKRenderWindowInteractor(self.frame)
         self.main_layout.addWidget(self.vtk_widget)
 
-        self.slider_1 = Slider()
-        self.slider_1.valueChanged.connect(lambda: self.set_orientation(1, self.slider_1.value()))
-        self.main_layout.addWidget(self.slider_1)
-
-        self.slider_2 = Slider()
-        self.slider_2.valueChanged.connect(lambda: self.set_orientation(2, self.slider_2.value()))
-        self.main_layout.addWidget(self.slider_2)
-
-        self.slider_3 = Slider()
-        self.slider_3.valueChanged.connect(lambda: self.set_orientation(3, self.slider_3.value()))
-        self.main_layout.addWidget(self.slider_3)
-
-        self.slider_4 = Slider()
-        self.slider_4.valueChanged.connect(lambda: self.set_orientation(4, self.slider_4.value()))
-        self.main_layout.addWidget(self.slider_4)
-
-        self.slider_5 = Slider()
-        self.slider_5.valueChanged.connect(lambda: self.set_orientation(5, self.slider_5.value()))
-        self.main_layout.addWidget(self.slider_5)
-
-        self.slider_6 = Slider()
-        self.slider_6.valueChanged.connect(lambda: self.set_orientation(6, self.slider_6.value()))
-        self.main_layout.addWidget(self.slider_6)
-
         self.main_layout.addStretch()
 
         self.renderer = vtkRenderer()
@@ -443,7 +423,7 @@ class TeachPanel(QWidget):
             "link6.stl",
             "spindle_assy.stl",
         ]
-        filenames = [f"stl/{filename}" for filename in filenames]
+        filenames = ["stl" / Path(filename) for filename in filenames]
 
         self.actor = []
         self.meca500_assy = []
@@ -502,14 +482,30 @@ class TeachPanel(QWidget):
         self.interactor.Initialize()
 
     def set_orientation(self, meca_index: int, position: int):
-        if meca_index in (1, 4):
+        if meca_index == 1:
             self.meca500_assy[meca_index].SetOrientation(0, 0, position)
-        elif meca_index in (2, 3):
+            self.window.slider_1.setValue(position)
+            self.window.joint_pose.lcd_1.display(position)
+        elif meca_index == 2:
             self.meca500_assy[meca_index].SetOrientation(0, position, 0)
+            self.window.slider_2.setValue(position)
+            self.window.joint_pose.lcd_2.display(position)
+        elif meca_index == 3:
+            self.meca500_assy[meca_index].SetOrientation(0, position, 0)
+            self.window.slider_3.setValue(position)
+            self.window.joint_pose.lcd_3.display(position)
+        elif meca_index == 4:
+            self.meca500_assy[meca_index].SetOrientation(0, 0, position)
+            self.window.slider_4.setValue(position)
+            self.window.joint_pose.lcd_4.display(position)
         elif meca_index == 5:
             self.meca500_assy[meca_index].SetOrientation(0, -position, 0)
+            self.window.slider_5.setValue(position)
+            self.window.joint_pose.lcd_5.display(position)
         elif meca_index == 6:
             self.meca500_assy[meca_index].SetOrientation(0, 0, -position)
+            self.window.slider_6.setValue(position)
+            self.window.joint_pose.lcd_6.display(position)
         else:
             raise Exception("Unknown index")
         # Update the view
